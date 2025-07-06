@@ -1,0 +1,47 @@
+{
+    "admin": { 
+        "en": "Admin", 
+        "zh": "管理员", 
+        "ja": "Admin"
+    }, 
+    "edit": { 
+        "en": "Edit", 
+        "zh": "编辑", 
+        "ja": "編集"  
+    }, 
+    "home": { 
+        "en": "Home",
+        "zh": "首页",
+        "ja": "ホーム" 
+    }, 
+    "login": { 
+        "en": "Login", 
+        "zh": "登录", 
+        "ja": "ログイン" 
+    }, 
+    "password": { 
+        "en": "Password", 
+        "zh": "密码", 
+        "ja": "パスワード" 
+    }, 
+    "resource": { 
+        "en": "Resource",
+        "zh": "资源",
+        "ja": "リソース"  
+    }, 
+    "unauthorized": { 
+        "en": "Unauthorized", 
+        "zh": "未授权", 
+        "ja": "Unauthorized" 
+    }, 
+    "upload": { 
+        "en": "Upload", 
+        "zh": "上传", 
+        "ja": "アップロード" 
+    },  
+    "user": { 
+        "en": "User", 
+        "zh": "用户", 
+        "ja": "ユーザー" 
+    } 
+}

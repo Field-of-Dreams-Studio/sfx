@@ -1,0 +1,59 @@
+-[ template "/base/base.html" ]-
+
+-[ block body ]-
+
+-[ insert "/base/path.html" ]-
+
+<div class="container-func">
+    Welcome!  
+
+    <a href="/user/logout">Logout</a> 
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('login-form');
+        const errorDiv = document.getElementById('login-error');
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+
+            // Collect form data as URL-encoded
+            const formData = new FormData(form);
+            const urlParams = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+                urlParams.append(key, value);
+            }
+
+            try {
+                const res = await fetch(window.location.pathname, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: urlParams.toString(), 
+                    credentials: 'include' 
+                });
+
+                const json = await res.json();
+
+                if (json.success === false) {
+                    // login failed
+                    errorDiv.textContent = json.message || 'Invalid credentials';
+                    errorDiv.style.display = 'block';
+                } else {
+                    // login succeeded
+                    window.location.href = '/';
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        });
+    });
+</script>
+
+-[ endblock ]- 

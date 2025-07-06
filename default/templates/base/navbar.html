@@ -1,0 +1,69 @@
+<nav class="navbar navbar-expand-md navbar sticky-top bg-body-tertiary shadow-pink"
+     style="position: fixed; top: 0; width: 100%">
+
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">-[ pageprop["nav"]["name"] ]-</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar"
+                aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbar">
+
+            <ul class="navbar-nav me-auto my-2 my-md-0 navbar-nav-scroll">
+
+                -[ for item pageprop["nav"]["itemlist"] ]- 
+                
+                    -[ if item["is_dropdown"] == false ]- 
+                        <li class="nav-item">
+                            <a class="nav-link" href="-[ item["url"] ]-">-[ item["display"] ]-</a>
+                        </li>
+
+                    -[ endif ]- 
+                    -[ if item["is_dropdown"] ]- 
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="-[ item["url"] ]-" data-bs-toggle="dropdown"
+                               aria-expanded="false">-[ item["display"] ]- 
+                            </a>
+                            <ul class="dropdown-menu">
+
+                                -[ for dropitem item["dropdown"] ]- 
+
+                                    <li>
+                                        <a class="dropdown-item" href="-[ dropitem["iurl"] ]-">
+                                            -[ dropitem["item"] ]- 
+                                        </a>
+                                    </li>
+
+                                -[ endfor ]- 
+
+                            </ul>
+                        </li>
+
+                    -[ endif ]- 
+
+                -[ endfor ]- 
+
+            </ul> 
+
+            <div class="d-lg-flex col-lg-3 justify-content-lg-end">
+
+                -[ if pageprop["user"]["uid"] != 0 ]- 
+
+                    <a href="/user/home">-[ pageprop["user"]["username"] ]-</a> <!-- -[ pageprop["user"]["cached_time"] ]- --> 
+
+                -[ endif ]- 
+
+                -[ if pageprop["user"]["uid"] == 0 ]- 
+                
+                    <a href="/user/login">Login</a> <!-- -[ pageprop["user"]["cached_time"] ]- --> 
+
+                -[ endif ]- 
+
+            </div>
+
+        </div>
+    </div>
+
+</nav>

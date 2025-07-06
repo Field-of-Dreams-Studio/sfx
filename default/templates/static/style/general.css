@@ -1,0 +1,175 @@
+.container-func {
+    background-color: #FFF;
+    border-radius: 5px;
+    padding: 20px;
+}
+
+a {
+    text-decoration: none; !important;
+}
+
+body {
+    position: fixed;
+    flex-direction: column;
+    height: 100vh; /* viewport height */
+    width: 100vw; /* viewport width */
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scroll on body */
+    background: #eee; /* same as footer and .fbg */
+}
+
+.scrollable {
+    overflow: scroll; /* Add scroll to content in container */
+    flex-grow: 1;  /* Allow .container to take up remaining space */
+    position: fixed;
+    width: 100%; /* viewport width */
+    height: 100vh; /* viewport height */
+    overflow-x: hidden; /* Prevent horizontal scroll */
+} 
+
+.list-group { 
+    border-radius: 5px;
+}
+
+.fl-textarea-container {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.fl-textarea-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    gap: 10px;
+}
+
+.fl-textarea-charcount {
+    font-size: 14px;
+    color: #666;
+    flex: 1;
+}
+
+.fl-textarea-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+/* Base button styling */
+.fl-btn {
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Activated state (wrap/line# on) */
+.fl-btn.activated {
+    background: #F3CECE; /* idle when activated */
+    color: #333;
+}
+.fl-btn.activated:hover {
+    background: #F3BEBE; /* hover when activated */
+}
+.fl-btn.activated:active {
+    background: #F3D3D3; /* active click when activated */
+}
+
+/* Not activated (wrap/line# off) */
+.fl-btn:not(.activated) {
+    background: #ddd; /* idle when not activated */
+    color: #333;
+}
+.fl-btn:not(.activated):hover {
+    background: #ccc; /* hover when not activated */
+}
+.fl-btn:not(.activated):active {
+    background: #bbb; /* active click when not activated */
+}
+
+/* Wrapper for textarea and line numbers */
+.fl-textarea-wrapper {
+    display: flex;
+    position: relative;
+    overflow: auto; /* Now the wrapper scrolls both line numbers and text */
+    max-height: 80vh; /* Limit total height */
+}
+
+.fl-textarea-linenumbers {
+    white-space: pre;
+    text-align: right;
+    padding: 10px;
+    font-size: 16px;
+    background: #fff7f9;
+    border: 1px solid #ffc0cb;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    color: #666;
+    user-select: none; 
+    font-family: monospace; 
+}
+
+.fl-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ffc0cb;
+    border-radius: 0 4px 4px 0;
+    padding: 10px;
+    font-size: 16px;
+    line-height: 1.5;
+    resize: none;
+    background: #fff;
+    color: #333;
+    min-height: 45px;
+    font-family: monospace; 
+    overflow-y: hidden; /* Prevent internal scroll, let the wrapper handle it */
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    transition: border-color 0.3s ease; 
+}
+
+/* Modern scrollbar styling */
+.fl-textarea::-webkit-scrollbar {
+    width: 6px;
+    background: #f0f0f0;
+}
+
+.fl-textarea::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+.fl-textarea::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+.fl-textarea-wrapper::-webkit-scrollbar {
+    width: 6px;
+    background: #f0f0f0;
+}
+
+.fl-textarea-wrapper::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+.fl-textarea-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+.fl-textarea:focus {
+    outline: none;
+    border-color: #ff91b9;
+}
+
+/* Hide line numbers when toggled off */
+.no-line-numbers .fl-textarea-linenumbers {
+    display: none;
+}
+
+/* If line numbers are off, round the textarea borders fully */
+.no-line-numbers .fl-textarea {
+    border-radius: 4px;
+}

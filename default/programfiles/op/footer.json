@@ -1,0 +1,146 @@
+{
+    "en": {
+        "items": [
+            {
+                "name": "List 1", 
+                "itemlist": [
+                    {
+                        "display": "Item 1",
+                        "url": "/"
+                    },
+                    {
+                        "display": "Item 2",
+                        "url": "https://fds.moe"
+                    }
+                ] 
+            },
+            {
+                "name": "List 2",
+                "itemlist": [
+                    {
+                        "display": "Item 1",
+                        "url": "/"
+                    },
+                    {
+                        "display": "Item 2",
+                        "url": "https://fds.moe"
+                    }
+                ] 
+            },
+            {
+                "name": "Language",
+                "itemlist": [
+                    {
+                        "display": "English",
+                        "url": "/op/lang/en"
+                    },
+                    {
+                        "display": "日本語",
+                        "url": "/op/lang/ja"
+                    },
+                    {
+                        "display": "普通話",
+                        "url": "/op/lang/zh"
+                    }
+                ] 
+            }
+        ], 
+        "footer": "&copy; 2020-2025 <a href=\"https://sf.fds.moe\" class=\"text-body-secondary\">Project-StarFall, FDS</a>, All rights reserved.<br>Bugs? Problems? Join our discord group! <a href=\"https://discord.gg/XwR9tKYN\"style=\"color: black\">https://discord.gg/XwR9tKYN</a>"
+    },
+    "zh": {
+        "items": [
+            {
+                "name": "列表 1",
+                "itemlist": [
+                    {
+                        "display": "项目 1",
+                        "url": "/"
+                    },
+                    {
+                        "display": "项目 2",
+                        "url": "https://fds.moe"
+                    }
+                ]
+            },
+            {
+                "name": "列表 2",
+                "itemlist": [
+                    {
+                        "display": "项目 1",
+                        "url": "/"
+                    },
+                    {
+                        "display": "项目 2",
+                        "url": "https://fds.moe"
+                    }
+                ]
+            },
+            {
+                "name": "语言",
+                "itemlist": [
+                    {
+                        "display": "English",
+                        "url": "/op/lang/en"
+                    },
+                    {
+                        "display": "日本語",
+                        "url": "/op/lang/ja"
+                    },
+                    {
+                        "display": "普通话",
+                        "url": "/op/lang/zh"
+                    }
+                ]
+            }
+        ],
+        "footer": "&copy; 2020-2025 <a href=\"https://sf.fds.moe\" class=\"text-body-secondary\">Project-StarFall, FDS</a>, 保留权利.<br>捉虫？疑问？现在就加入我们的 Discord 小组！ <a href=\"https://discord.gg/XwR9tKYN\"style=\"color: black\">https://discord.gg/XwR9tKYN</a>" 
+    }, 
+    "ja": { 
+        "items": [
+            {
+                "name": "リスト 1",
+                "itemlist": [
+                    {
+                        "display": "アイテム 1",
+                        "url": "/"
+                    },
+                    {
+                        "display": "アイテム 2",
+                        "url": "https://fds.moe"
+                    }
+                ]
+            },
+            {
+                "name": "リスト 2",
+                "itemlist": [
+                    {
+                        "display": "アイテム 1",
+                        "url": "/"
+                    },
+                    {
+                        "display": "アイテム 2",
+                        "url": "https://fds.moe"
+                    }
+                ]
+            },
+            {
+                "name": "言語",
+                "itemlist": [
+                    {
+                        "display": "English",
+                        "url": "/op/lang/en"
+                    },
+                    {
+                        "display": "日本語",
+                        "url": "/op/lang/ja"
+                    },
+                    {
+                        "display": "普通话",
+                        "url": "/op/lang/zh"
+                    }
+                ]
+            }
+        ],
+        "footer": "&copy; 2020-2025 <a href=\"https://sf.fds.moe\" class=\"text-body-secondary\">Project-StarFall, FDS</a>, 全ての権利を保有します.<br>バグ？問題？今すぐ私たちの Discord グループに参加してください！ <a href=\"https://discord.gg/XwR9tKYN\"style=\"color: black\">https://discord.gg/XwR9tKYN</a>" 
+    }
+} 

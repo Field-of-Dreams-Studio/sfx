@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="-[ pageprop["lang"] ]-"> 
+    <head> 
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+        <link rel="icon" href="/static/fdsprivate/logo.ico" type="image/x-icon">
+        <title>-[ pageprop["title"] ]-</title>
+        <meta name="description" content="-[ pageprop["description"] ]-">
+        <meta name="keywords" content="-[ pageprop["keywords"] ]-">
+        <link href="/static/bootstrap-5.3.2/css/bootstrap.min.css" rel="stylesheet">
+        <script src="/static/bootstrap-5.3.2/js/bootstrap.bundle.min.js"></script>
+        <script src="/static/fdsprivate/fds-apa.js"></script>
+        <link href="/static/style/button-bs.css" rel="stylesheet" type="text/css">
+        <link href="/static/style/general.css" rel="stylesheet" type="text/css">
+        <style>
+            .bg {
+                background: url('/static/picture/pink.png') no-repeat;
+                background-color: var(--fds--[pageprop["color"]]--normal);
+                background-size: cover;
+                background-position: 50% 0px;
+                width: 100vw;
+                height: 100vh;
+                position: fixed;
+                left: 0px;
+                top: 0px;
+                z-index: -100;
+            }  
+
+            .grid-container {
+                display: grid;
+                grid-template-columns: 200px 1fr;
+                grid-gap: 20px;
+            } 
+
+            .round { 
+                border-radius:10px !important; 
+            } 
+
+            @media (max-width: 768px) { /* Adjust 768px as needed */
+                .grid-container {
+                    grid-template-columns: 1fr; /* Single column layout on smaller screens */
+                }
+
+                .links {
+                    border-right: none; /* Remove the border on mobile */
+                    padding-right: 0; /* Remove the padding on mobile */
+                }
+            }
+
+            .links {
+                /* Styles for the links section */
+                padding-right: 10px;
+                border-right: 1px solid #ccc; /* Optional: Add a border to separate the links from the content */
+            } 
+
+            .markdown-content pre {
+                overflow-x: auto; /* Keep horizontal scrolling for long code lines */
+                white-space: pre-wrap; /* Allow code to wrap */
+                word-break: break-word; /* Break long words if necessary */
+            } 
+        </style>
+        -[ block head ]- 
+        -[ endblock ]- 
+    </head>
+
+    <body>
+        -[ insert "navbar.html" ]- 
+        <div class="bg"></div>
+        <div class="scrollable">
+            <div class="container" style="padding-top: 100px; padding-bottom: 30px">
+                -[ block body ]- 
+                -[ endblock ]- 
+            </div> 
+            -[ insert "footer.html" ]- 
+        </div> 
+    </body>
+</html>

@@ -1,0 +1,142 @@
+-[ template "/base/base.html" ]-
+
+-[ block body ]-
+
+-[ insert "/base/path.html" ]-    
+
+<div class="container-func">
+    <h2>Manage Users</h2>
+    <form id="userForm" method="POST" action="/admin/users">
+        <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required />
+        </div> 
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required />
+        </div> 
+        <button type="submit" class="btn btn-pink">Add User</button>
+    </form>
+    <hr/>
+    <h3>Existing Users</h3>
+    <form id="filterForm" method="GET" action="/panel/users" class="row g-3 mb-3">
+        <div class="col-md-2">
+            <input type="text" name="username" class="form-control" placeholder="Username">
+        </div>
+        <div class="col-md-2">
+            <input type="email" name="email" class="form-control" placeholder="Email">
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="created_after" class="form-control" placeholder="Created After">
+        </div>
+        <div class="col-md-1">
+            <select name="is_active" class="form-select">
+                <option value="">Active?</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select name="is_superuser" class="form-select">
+                <option value="">Superuser?</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <select name="is_verified" class="form-select">
+                <option value="">Verified?</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-pink">Filter</button>
+        </div>
+    </form>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>UID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Active</th>
+                <th>Superuser</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody id="usersTableBody">
+        </tbody>
+    </table>
+    <div class="mt-3">
+      <nav>
+        <ul class="pagination">
+          <li class="page-item">
+            <a id="prevPage" class="page-link" href="#">Previous</a>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">Page <span id="currentPage">1</span></span>
+          </li>
+          <li class="page-item">
+            <a id="nextPage" class="page-link" href="#">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = parseInt(urlParams.get('page')) || 1;
+        let res;
+        try {
+            res = await fetch('/panel/users/json' + window.location.search);
+        } catch (e) {
+            console.error('Fetch to /panel/users/json failed:', e);
+            return;
+        }
+        let text;
+        try {
+            text = await res.text();
+        } catch (e) {
+            console.error('Failed to read response text:', e);
+            return;
+        }
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('Invalid JSON from /panel/users/json:', text, e);
+            return;
+        }
+        const { users } = data;
+        const tbody = document.getElementById('usersTableBody');
+        // Paginate client-side: 10 users per page
+        const startIndex = (page - 1) * 10;
+        const pageUsers = users.slice(startIndex, startIndex + 10);
+        // Build HTML manually to avoid template literal syntax issues
+        let html = '';
+        for (const user of pageUsers) {
+            html += '<tr>' +
+                    '<td>' + user.uid + '</td>' +
+                    '<td>' + user.username + '</td>' +
+                    '<td>' + user.email + '</td>' +
+                    '<td>' + user.is_active + '</td>' +
+                    '<td>' + user.is_superuser + '</td>' +
+                    '<td><a href="/panel/users/' + user.uid + '">Edit</a></td>' +
+                '</tr>';
+        }
+        tbody.innerHTML = html;
+        // Update pagination links
+        document.getElementById('currentPage').textContent = page;
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+        if (page > 1) {
+            prevPage.href = window.location.pathname + '?page=' + (page - 1);
+        } else {
+            prevPage.parentElement.classList.add('disabled');
+        }
+        nextPage.href = window.location.pathname + '?page=' + (page + 1);
+    });
+    </script>
+</div>
+-[ endblock ]- 

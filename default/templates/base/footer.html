@@ -1,0 +1,48 @@
+
+    <div width="100%" style="background-color: #eee; margin-bottom: auto; ">
+        <div class="container" id="footer_container">
+            <footer class="py-5" style="width: 100%; padding-left: 2%; padding-right: 2% ">
+                <div class="row">
+
+                    -[ for row pageprop["foot"]["items"] ]- 
+
+                        <div class="col-6 col-md-2 mb-3">
+                            <h5>-[ row["name"] ]-</h5>
+                            <ul class="nav flex-column">
+
+                                -[ for item row["itemlist"] ]- 
+
+                                    <li class="nav-item mb-2">
+                                        <a href="-[ item["url"] ]-?from=-[ pageprop["path"] ]-"
+                                        class="nav-link p-0 text-body-secondary">-[ item["display"] ]-</a>
+                                    </li>
+
+                                -[ endfor ]- 
+
+                            </ul>
+                        </div>
+
+                    -[ endfor ]- 
+
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row justify-content-between py-4 my-4 border-top">
+                    <p>
+                        -[ pageprop["foot"]["footer"] ]-  
+                    </p>
+                    <!--<ul class="list-unstyled d-flex">
+                        <li class="ms-3"><a class="link-body-emphasis" href="#"><svg class="bi" width="24" height="24">
+                                    <use xlink:href="#twitter" />
+                                </svg></a></li>
+                        <li class="ms-3"><a class="link-body-emphasis" href="#"><svg class="bi" width="24" height="24">
+                                    <use xlink:href="#instagram" />
+                                </svg></a></li>
+                        <li class="ms-3"><a class="link-body-emphasis" href="#"><svg class="bi" width="24" height="24">
+                                    <use xlink:href="#facebook" />
+                                </svg></a></li>
+                    </ul>-->
+                </div>
+            </footer>
+        </div>
+    </div>
+

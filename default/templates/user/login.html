@@ -1,0 +1,93 @@
+-[ template "/base/base.html" ]-
+
+-[ block body ]-
+
+-[ insert "/base/path.html" ]-
+
+<div class="row justify-content-center" style="padding-top: 50px; padding-bottom: 30px;">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="text-center mb-4">Login</h2>
+
+                <!-- error message placeholder -->
+                <div id="login-error" class="alert alert-danger" style="display:none;"></div>
+
+                <form id="login-form" method="POST">
+                    <div class="mb-3">
+                        <label for="host" class="form-label">Host</label>
+                        <select name="host" class="form-select" id="host" required>
+                        -[ for h host ]- 
+                            <option value="-[ h ]-" selected>-[ h ]-</option>
+                        -[ endfor ]- 
+                        </select>
+                    </div> 
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input name="password" class="form-control" type="password" placeholder="Password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-pink">Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('login-form');
+        const errorDiv = document.getElementById('login-error');
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+
+            // Collect form data as URL-encoded
+            const formData = new FormData(form);
+            const urlParams = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+                urlParams.append(key, value);
+            }
+
+            try {
+                const res = await fetch(window.location.pathname, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: urlParams.toString(),
+                    credentials: 'include'
+                });
+                
+                const json = await res.json();
+
+                if (json.success === false) {
+                    // login failed
+                    errorDiv.textContent = json.message || 'Invalid credentials';
+                    errorDiv.style.display = 'block';
+                } else {
+                    // login succeeded
+                    // window.location.href = '/user/refresh?redirect=/'; 
+                        // Add a small delay before redirecting
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 500); // 500 ms delay 
+                    errorDiv.textContent = json.message || 'Logged in successfully. Redirecting...';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        });
+    });
+</script>
+
+-[ endblock ]-

@@ -1,0 +1,137 @@
+{
+    "en": {
+        "name": "{{project_name}}",
+        "itemlist": [
+            {
+                "display": "Single",
+                "url": "/",
+                "is_dropdown": false
+            },
+            {
+                "display": "List",
+                "url": "/",
+                "is_dropdown": true,
+                "dropdown": [
+                    {
+                        "item": "Item 1",
+                        "iurl": "/"
+                    },
+                    {
+                        "item": "Item 2",
+                        "iurl": "/starberry/news/"
+                    }
+                ]
+            },
+            {
+                "display": "Another List",
+                "url": "/",
+                "is_dropdown": true,
+                "dropdown": [
+                    {
+                        "item": "Item 1",
+                        "iurl": "/"
+                    },
+                    {
+                        "item": "Item 2",
+                        "iurl": "/starberry/news/"
+                    }
+                ]
+            },
+            {
+                "display": "Welcome to FDS",
+                "url": "https://fds.moe",
+                "is_dropdown": false
+            }
+        ]
+    },
+    "ja": { 
+        "name": "{{project_name}}",
+        "itemlist": [
+            {
+                "display": "シングル",
+                "url": "/",
+                "is_dropdown": false
+            },
+            {
+                "display": "リスト",
+                "url": "/",
+                "is_dropdown": true,
+                "dropdown": [
+                    {
+                        "item": "アイテム 1",
+                        "iurl": "/"
+                    },
+                    {
+                        "item": "アイテム 2",
+                        "iurl": "/starberry/news/"
+                    }
+                ]
+            },
+            {
+                "display": "別のリスト",
+                "url": "/",
+                "is_dropdown": true,
+                "dropdown": [
+                    {
+                        "item": "アイテム 1",
+                        "iurl": "/"
+                    },
+                    {
+                        "item": "アイテム 2",
+                        "iurl": "/starberry/news/"
+                    }
+                ]
+            },
+            {
+                "display": "FDSへようこそ",
+                "url": "https://fds.moe",
+                "is_dropdown": false
+            }
+        ]
+    }, 
+    "zh": { 
+        "name": "{{project_name}}",
+        "itemlist": [
+            {
+                "display": "单项",
+                "url": "/",
+                "is_dropdown": false
+            },
+            {
+                "display": "列表",
+                "url": "/",
+                "is_dropdown": true,
+                "dropdown": [
+                    {
+                        "item": "项目 1",
+                        "iurl": "/"
+                    },
+                    {
+                        "item": "项目 2",
+                        "iurl": "/starberry/news/"
+                    }
+                ]
+            },
+            {
+                "display": "另一个列表",
+                "url": "/",
+                "is_dropdown": true,
+                "dropdown": [
+                    {
+                        "item": "项目 1",
+                        "iurl": "/"
+                    },
+                    {
+                        "item": "项目 2",
+                        "iurl": "/starberry/news/"
+                    }
+                ]
+            },
+            {
+                "display": "欢迎来到 FDS",
+                "url": "https://fds.moe",
+                "is_dropdown": false
+            }
+        ] 
+    }
+}
