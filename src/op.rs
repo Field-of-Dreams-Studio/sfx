@@ -3,6 +3,10 @@ pub use crate::APP;
 pub use starberry::prelude::*; 
 pub use std::env;
 use std::fs; 
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
+use starberry::prelude::{Value, object};
+use serde_json::{Value as JsonValue};
 
 static NAVBAR: Lazy<Value> = Lazy::new(|| {
     let mut path = env::current_dir().unwrap();
@@ -157,16 +161,51 @@ pub fn into_path_l(req: &mut HttpReqCtx, path: Vec<&str>) -> Value {
     into_path(req, slices)
 }
 
+static L10N_CACHE: Lazy<HashMap<String, HashMap<String, String>>> = Lazy::new(|| {
+    let mut cache = HashMap::new();
+    let mut path = env::current_dir().unwrap_or_default();
+    path.push("programfiles/op/l10n.json");
+
+    if let Ok(json_str) = fs::read_to_string(&path) {
+        if let Ok(json) = serde_json::from_str::<JsonValue>(&json_str) {
+            if let JsonValue::Object(obj) = json {
+                for key in obj.keys() {
+                    let dict = L10N.get(key);
+                    let mut lang_map = HashMap::new();
+                    for lang in SUPPORT_LANG.list().iter().map(|v| v.string()) {
+                        let translation = match dict.try_get(&lang) {
+                            Ok(value) => value.string(),
+                            Err(starberry::akari::ValueError::KeyNotFoundError) => {
+                                dict.get(&default_lang()).string()
+                            }
+                            Err(_) => dict.string(),
+                        };
+                        lang_map.insert(lang, translation);
+                    }
+                    cache.insert(key.to_string(), lang_map);
+                }
+            }
+        }
+    }
+
+    cache
+});
+
 pub fn get_localized_string(key: &str, lang: &str) -> String {
-    let dict = L10N.get(key); 
-    match dict.try_get(lang) {
-        Ok(value) => value.string(), 
-        Err(starberry::akari::ValueError::KeyNotFoundError) => {
-            dict.get(default_lang()).string()
-        }, 
-        Err(_) => dict.string(), 
-    } 
-} 
+    L10N_CACHE
+        .get(key)
+        .and_then(|lang_map| lang_map.get(lang).cloned())
+        .unwrap_or_else(|| {
+            let dict = L10N.get(key);
+            match dict.try_get(lang) {
+                Ok(value) => value.string(),
+                Err(starberry::akari::ValueError::KeyNotFoundError) => {
+                    dict.get(default_lang()).string()
+                }
+                Err(_) => dict.string(),
+            }
+        })
+}
 
 #[url(reg![&APP, LitUrl("op"), LitUrl("lang"), ArgUrl("lang")])]
 async fn change_language() -> HttpResponse {
