@@ -712,11 +712,4 @@ mod test {
 
         assert!(auth.check_password(1, "js").await); 
     } 
-
-    #[test] 
-    fn decode() {
-        let decoded = aes::decrypt("wk+yS1cnC4l2/I5Dfcjid40K213JBKIcLO0b5TdTHTgOhCRYHh738gxmnNqRcuI2am8wvA=", "no%hZ<3HQ1s;<Z?s>") // This is a test password 
-            .expect("Failed to decode the password");
-        println!("Decoded password: {}", decoded);
-    }
 } 

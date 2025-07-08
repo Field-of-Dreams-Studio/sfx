@@ -83,7 +83,8 @@ fn create_project(project_name: &str, target_dir: &Path, force: bool) -> Result<
         "Project '{}' created at {}",
         project_name,
         target_dir.display()
-    );
+    ); 
+    println!("The default admin user is 'Admin' with password 'Aa333333' in the Local server");
     Ok(())
 }
 

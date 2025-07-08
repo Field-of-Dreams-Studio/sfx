@@ -1,4 +1,4 @@
-use starberry::prelude::*; 
+use sfx::prelude::*; 
 use {{project_name}}::APP; 
 
 #[tokio::main]

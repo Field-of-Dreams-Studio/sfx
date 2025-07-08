@@ -1315,7 +1315,6 @@ dependencies = [
  "regex",
  "sbmstd",
  "serde",
- "serde_json",
  "starberry",
  "tokio",
  "tracing",
