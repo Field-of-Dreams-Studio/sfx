@@ -1220,7 +1220,9 @@ dependencies = [
 
 [[package]]
 name = "sbmstd"
-version = "0.6.2"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e27dbc99b8b6df9dff8b248291390654fbc948a48bf4dcf14fe5609442572671"
 dependencies = [
  "akari",
  "dashmap",
@@ -1314,7 +1316,6 @@ dependencies = [
  "once_cell",
  "regex",
  "sbmstd",
- "serde",
  "starberry",
  "tokio",
  "tracing",
@@ -1383,7 +1384,9 @@ dependencies = [
 
 [[package]]
 name = "starberry"
-version = "0.6.3"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "471be2ba2ac90623a6acec2ab0c31c0850272be7e908afffa20cf9141a2ef49e"
 dependencies = [
  "akari",
  "ctor",
@@ -1398,7 +1401,9 @@ dependencies = [
 
 [[package]]
 name = "starberry_core"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83f54ea0566ef8421332a40ab2906a24c4db39bcd876961d2df31a0cb5b19a7b"
 dependencies = [
  "akari",
  "async-trait",
@@ -1416,7 +1421,9 @@ dependencies = [
 
 [[package]]
 name = "starberry_lib"
-version = "0.7.1"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64de3a44928b6655db6243a685155f23b1eaeeadf1c9fb85e6362d5ab6138e3d"
 dependencies = [
  "aes-gcm",
  "base64 0.21.7",
@@ -1433,7 +1440,9 @@ dependencies = [
 
 [[package]]
 name = "starberry_macro"
-version = "0.6.2"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88a73532b4a95d853f9fd4fa03a6f5ffcd681d681fa9b2200442adc52ba29ad1"
 dependencies = [
  "ctor",
  "proc-macro2",
