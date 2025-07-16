@@ -15,7 +15,6 @@ pub async fn check_is_admin(req: &mut HttpReqCtx) -> bool {
     op::get_admin().contains(&user) 
 } 
 
-
 pub fn check_is_admin_id(id: UserID) -> bool {
     println!("check_is_admin_id: user: {}, admins: {}, is_admin: {}", id, op::get_admin(), op::get_admin().contains(&object!(id.to_string())));
     op::get_admin().contains(&object!(id.to_string()))

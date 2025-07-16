@@ -10,6 +10,28 @@ use starberry::{
     starberry_core::http::start_line::HttpStartLine,
 };
 
+/// The GET and POST endpoint for user login 
+/// 
+/// # Request 
+/// `GET /user/login` 
+/// EMPTY 
+/// 
+/// `POST /user/login` 
+/// UrlCodedForm, 
+/// host: The base server, use "local" to present local host 
+/// username: UserName 
+/// password: Password 
+/// 
+/// # Response 
+/// (1) The HTML page for login 
+/// (2) JSON 
+/// {
+///     success: false,
+///     message: "Invalid response from server" // All other cases
+/// } 
+/// (3) JSON 
+/// JSON response from the server 
+/// While the auth token and the host will be added to the cookie 
 #[url(reg![&APP, LitUrl("user"), LitUrl("login")])]
 async fn login() -> HttpResponse {
     logout(req).await; // Ensure user is logged out before login 
@@ -52,6 +74,15 @@ async fn login() -> HttpResponse {
     )
 }
 
+/// The logout endpoint 
+/// 
+/// # Request 
+/// `GET /user/logout ` 
+/// Cookie session required to be include in the header  
+/// 
+/// # Response 
+/// A `HttpResponse` that redirects to the login-refresh flow 
+/// This will clear the session and redirect to the login page 
 #[url(reg![&APP, LitUrl("user"), LitUrl("logout")])]
 async fn logout_route() -> HttpResponse {
     if let Some(token) = get_auth_token(req) {
@@ -60,17 +91,30 @@ async fn logout_route() -> HttpResponse {
     logout(req).await
 }
 
+/// The refresh endpoint 
+/// 
+/// # Request 
+/// `GET /user/refresh?redirect=<url>` 
+/// Cookie session required to be included in the header 
+/// 
+/// # Response 
+/// A `HttpResponse` that redirects to the specified URL 
+/// This will refresh the user token and redirect to the specified URL 
 #[url(reg![&APP, LitUrl("user"), LitUrl("refresh")])]
 async fn refresh_route() -> HttpResponse {
     refresh_user_token(req).await;
     redirect_response(&req.get_url_args("redirect").unwrap_or("/".to_string()))
 }
 
+/// Get the current user's auth token from the request context. 
+/// This is not meant for production use, but for testing purposes only. 
 #[url(reg![&APP, LitUrl("user"), LitUrl("token")])]
 async fn get_token() -> HttpResponse {
     text_response(format!("{:?}", get_auth_token(req)))
 }
 
+/// Get the current user's information. 
+/// This is not meant for production use, but for testing purposes only. 
 #[url(reg![&APP, LitUrl("user"), LitUrl("info")])]
 async fn get_self_uid() -> HttpResponse {
     if let Some(token) = get_auth_token(req) {
@@ -83,11 +127,15 @@ async fn get_self_uid() -> HttpResponse {
     }
 }
 
+/// Refresh the user token and return the new token in JSON format. 
+/// This is not meant for production use, but for testing purposes only. 
 #[url(reg![&APP, LitUrl("user"), LitUrl("refresh_api")])]
 async fn refresh_token() -> HttpResponse {
     json_response(refresh_user_token(req).await)
 }
 
+/// Get the current user's cached information from the session. 
+/// This is not meant for production use, but for testing purposes only. 
 #[url(reg![&APP, LitUrl("user"), LitUrl("server_health")])]
 async fn server_health() -> HttpResponse {
     akari_json!({
@@ -95,6 +143,23 @@ async fn server_health() -> HttpResponse {
     })
 }
 
+/// Get the current user's cached information from the session. 
+/// 
+/// # Request 
+/// `GET /user/cached_info` 
+/// A `HttpResponse` that contains the cached user information 
+/// 
+/// # Response 
+/// Json 
+/// {
+//     uid: self.id.uid,
+//     server: self.id.server.to_string(),
+//     username: self.username,
+//     email: self.email,
+//     is_active: self.is_active,
+//     is_verified: self.is_verified,
+//     cached_time: self.cached_at,
+// } 
 #[url(reg![&APP, LitUrl("user"), LitUrl("cached_info")])]
 async fn get_self_cached_info() -> HttpResponse {
     let user = req
@@ -106,16 +171,27 @@ async fn get_self_cached_info() -> HttpResponse {
     json_response(user)
 }
 
+/// The usercenter redirect 
 #[url(reg![&APP, LitUrl("user")])]
 async fn user_index_redirect() -> HttpResponse {
     redirect_response("/user/home")
 }
 
+/// The usercenter redirect 
 #[url(reg![&APP, LitUrl("user"), TrailingSlash()])]
 async fn user_index() -> HttpResponse {
     redirect_response("/user/home")
-}
+} 
 
+/// The user center home page 
+/// 
+/// # Request 
+/// `GET /user/home` 
+/// The session must contain a valid user information 
+/// 
+/// # Response 
+/// A `HttpResponse` that contains the user home page 
+/// If the user is a guest, it will redirect to the login page 
 #[url(reg![&APP, LitUrl("user"), LitUrl("home")])]
 async fn home() -> HttpResponse {
     if req.params.get::<User>().unwrap().get_uid() == 0 {
@@ -135,6 +211,28 @@ async fn home() -> HttpResponse {
     )
 }
 
+/// The POST endpoint for changing the user's password. 
+/// 
+/// # Request
+/// `POST /user/home/change_password`
+///
+/// The request body must contain the old and new passwords. 
+/// UrlEncodedForm 
+/// { 
+///    old_password: String, 
+///    new_password: String,  
+///    host: String, // The base server, use "local" to present local host
+/// } 
+/// 
+/// # Response 
+/// 
+/// A `HttpResponse` that contains the result of the password change operation 
+/// 
+/// If the operation is successful, it will return a JSON object with the following structure: 
+/// {
+///     success: true,
+///     message: "Password changed successfully"
+/// } 
 #[url(reg![&APP, LitUrl("user"), LitUrl("home"), LitUrl("change_password")])]
 pub async fn change_password(req: &mut HttpReqCtx) -> HttpResponse {
     let user = get_user(req).await;
@@ -173,6 +271,7 @@ pub async fn change_password(req: &mut HttpReqCtx) -> HttpResponse {
     }))
 }
 
+/// Unauthorized access page 
 #[url(reg![&APP, LitUrl("user"), LitUrl("unauthorized")])]
 pub async fn unauthorized(req: &mut HttpReqCtx) -> HttpResponse {
     akari_render!(

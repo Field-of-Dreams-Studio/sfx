@@ -17,7 +17,7 @@ pub mod admin;
 pub static APP: SApp = Lazy::new(|| {
     App::new()
         // .mode(RunMode::Build) 
-        .binding(op::BINDING)
+        .binding(op::BINDING.clone())
         .max_connection_time(10) 
         .single_protocol(ProtocolBuilder::<HttpReqCtx>::new()
             .append_middleware::<PrintLog>() 

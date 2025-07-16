@@ -3,13 +3,6 @@ use crate::{local_auth::LOCAL_AUTH, APP};
 use crate::admin::check_is_admin; 
 use tracing::{instrument, info, error};
 
-/// Examples:
-/// ```
-/// use serde_json;
-/// use crate::local_auth::models::AdminCreateUserRequest;
-/// let req: AdminCreateUserRequest = serde_json::from_str(r#"{"username":"u","password":"p"}"#).unwrap();
-/// assert_eq!(req.username, "u");
-/// ```
 #[instrument(level = "info", skip(req))]
 #[url(APP.lit_url("/admin/users"))]
 async fn admin_users(mut req: HttpReqCtx) -> HttpResponse {
