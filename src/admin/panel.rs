@@ -5,7 +5,7 @@ use starberry::HttpBody;
 use crate::APP; 
 
 async fn admin_fetch_json(req: &mut HttpReqCtx, path: &str) -> Option<Value> {
-    let full_host: String = format!("http://{}", op::BINDING); 
+    let full_host: String = format!("http://{}", op::BINDING.clone()); 
     let response = HttpResCtx::send_request(
         full_host.clone(),
         get_request(path)
