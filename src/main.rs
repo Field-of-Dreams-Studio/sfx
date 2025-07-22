@@ -137,3 +137,4 @@ fn process_template_files(
 fn replace_placeholders(content: &str, project_name: &str) -> String {
     content.replace("{{project_name}}", project_name)
 }
+mod resource;
