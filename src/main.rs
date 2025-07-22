@@ -103,7 +103,25 @@ fn process_template_files(
         match entry {
             DirEntry::File(file) => {
                 let relative_path = file.path();
-                let target_path = target_dir.join(relative_path);
+                let initial_target_path = target_dir.join(relative_path);
+
+                // Handle .template files by removing the .template extension
+                let target_path = if let Some(file_name) = initial_target_path.file_name() {
+                    if let Some(file_name_str) = file_name.to_str() {
+                        if file_name_str.ends_with(".template") {
+                            let new_name = file_name_str.strip_suffix(".template").unwrap();
+                            let mut new_path = initial_target_path.clone();
+                            new_path.set_file_name(new_name);
+                            new_path
+                        } else {
+                            initial_target_path
+                        }
+                    } else {
+                        initial_target_path
+                    }
+                } else {
+                    initial_target_path
+                };
 
                 // Skip if file exists and not forcing
                 if target_path.exists() && !force {
