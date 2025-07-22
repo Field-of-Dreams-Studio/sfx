@@ -1,7 +1,8 @@
 [package]
 name = "sfx"
 version = "0.1.0"
-edition = "2024"
+edition = "2024" 
+build = "build.rs"  
 authors = ["Redstone <redstone@fds.moe>"] 
 description = "SFX is a streamlined, full-stack Rust framework for building small web services with integrated authentication, localization, and config-driven UI components"  
 repository = "https://github.com/Field-of-Dreams-Studio/sfx" 
