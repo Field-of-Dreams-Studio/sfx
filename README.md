@@ -8,6 +8,10 @@ The framework is built using starberry. Read more about starberry in https://fds
 
 You may import starberry directly from `use sfx::prelude` or `use sfx::starberry` 
 
+Use `sfx --help` to learn how to use built-in tools in sfx, while run `sfx init` in the target dir to initialize a new project 
+
+https://fds.rs/sfx/tutorial/0.1.3/ 
+
 # Settings & Op 
 
 ## Endpoints 
