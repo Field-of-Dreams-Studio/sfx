@@ -1,5 +1,7 @@
 # SFX framework 
 
+SFX is a streamlined, full-stack Rust framework for building small web services with integrated authentication, localization, and config-driven UI components 
+
 SFX is a simplified framework for building full-stack, small service. 
 
 The framework now allows external auth, local auth and we will soon add OAuth into it 

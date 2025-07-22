@@ -8,9 +8,9 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```c 
 //! use std::time::Duration;
-//! use local_auth::AuthManager;
+//! use sfx::local_auth::AuthManager;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {

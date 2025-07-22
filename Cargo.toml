@@ -2,6 +2,13 @@
 name = "sfx"
 version = "0.1.0"
 edition = "2024"
+authors = ["Redstone <redstone@fds.moe>"] 
+description = "SFX is a streamlined, full-stack Rust framework for building small web services with integrated authentication, localization, and config-driven UI components"  
+license = "MIT" 
+homepage = "https://fds.rs/sfx/"  
+categories = ["network-programming", "web-programming::http-server" ] 
+keywords = ["full-stack", "web-framework"]  
+readme = "README.md"  
 
 [dependencies]
 starberry = "0.6.4" 
