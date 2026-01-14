@@ -1,9 +1,9 @@
 //! user.rs
 //!
 //! Definition of the application’s `User` and `UserID` types, along with
-//! (de)serialization to/from `starberry::Value` and helper methods.
+//! (de)serialization to/from `hotaru::Value` and helper methods.
 
-use starberry::{object, Value}; 
+use hotaru::{object, Value}; 
 use super::Server; 
 
 /// Represents an authenticated user with metadata and a timestamp
@@ -52,6 +52,11 @@ impl User {
     /// Return the server instance where the user account is stored. 
     pub fn get_server(&self) -> &Server {
         &self.id.server
+    } 
+
+    /// Return the full user ID struct. 
+    pub fn get_user_id(&self) -> &UserID {
+        &self.id
     } 
 
     /// Return the login/username.
@@ -108,7 +113,7 @@ impl User {
     }
 }
 
-/// Construct a `User` from a `starberry::Value` JSON object. Expects
+/// Construct a `User` from a `hotaru::Value` JSON object. Expects
 /// fields `uid`, `username`, `email`, `is_active`, `is_verified` and
 /// optionally `cached_time` (seconds old).
 impl From<Value> for User {
@@ -129,7 +134,7 @@ impl From<Value> for User {
     }
 }
 
-/// Convert a `User` into a `starberry::Value` map for JSON responses
+/// Convert a `User` into a `hotaru::Value` map for JSON responses
 /// or session storage. Fields:
 /// - `uid`, `server`, `username`, `email`, `is_active`, `is_verified`, `cached_time`
 impl Into<Value> for User {
@@ -176,7 +181,11 @@ impl UserID {
         let raw_id = parts.next()?.parse().ok()?;
         let host = parts.next()?.to_string();
         Some(Self::new(raw_id, host.into()))
-    }
+    } 
+
+    pub fn is_guest(&self) -> bool {
+        self.uid == 0
+    } 
 }
 
 impl std::fmt::Display for UserID {

@@ -6,9 +6,9 @@ SFX is a simplified framework for building full-stack, small service.
 
 The framework now allows external auth, local auth and we will soon add OAuth into it 
 
-The framework is built using starberry. Read more about starberry in https://fds.rs/starberry/. 
+The framework is built using hotaru. Read more about hotaru in https://fds.rs/hotaru/. 
 
-You may import starberry directly from `use sfx::prelude` or `use sfx::starberry` 
+You may import hotaru directly from `use sfx::prelude` or `use sfx::hotaru` 
 
 Use `sfx --help` to learn how to use built-in tools in sfx, while run `sfx init` in the target dir to initialize a new project 
 
@@ -113,7 +113,7 @@ Another kind is dropdown, if you click the item the subitems contained in this i
         },
         {
             "item": "Item 2",
-            "iurl": "/starberry/news/"
+            "iurl": "/hotaru/news/"
         }
     ]
 } 

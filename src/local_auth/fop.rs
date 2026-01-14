@@ -34,9 +34,9 @@
 //! }
 //! ```
 //!
-use starberry::prelude::*;
-use starberry::starberry_lib::ende::aes; 
-use starberry::starberry_lib::random_string; 
+use hotaru::prelude::*;
+use hotaru_lib::ende::aes; 
+use hotaru_lib::random::random_alphanumeric_string; 
 use std::num::NonZeroU32; 
 use std::time::Duration;
 use std::collections::HashMap;
@@ -296,14 +296,18 @@ impl AuthManager {
         }
     } 
 
-    /// Login the user while generating a token for the user 
+    /// Login the user while generating a token for the user
     pub async fn login_user(&self, uid: u32, password: &str) -> Result<String, FopError> {
+        println!("[AuthManager::login_user] Checking password for uid: {}", uid);
         if self.check_password(uid, password).await {
-            let token = random_string(32);
+            let token = random_alphanumeric_string(32);
             let expires = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() + 3600; // 1 hour
+            println!("[AuthManager::login_user] Generated token: {}, expires: {}", token, expires);
             self.token_list.add(token.clone(), uid, expires).await;
+            println!("[AuthManager::login_user] Token added to token_list");
             Ok(token)
         } else {
+            println!("[AuthManager::login_user] Password mismatch");
             Err(FopError::PasswordMismatch)
         }
     } 
@@ -328,7 +332,7 @@ impl AuthManager {
     /// The old token should be valid
     pub async fn refresh_token(&self, old_token: &str) -> Result<String, FopError> {
         if let Some(uid) = self.token_list.authenticate_user(old_token).await {
-            let new_token = random_string(32);
+            let new_token = random_alphanumeric_string(32);
             let expires = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() + 3600; // 1 hour
             self.token_list.add(new_token.clone(), uid, expires).await;
             Ok(new_token)
@@ -518,7 +522,7 @@ impl AuthManager {
         let new_uid = self.new_uid().await; 
         self.username_map.write().await.insert(username.to_string(), new_uid); 
         self.email_map.write().await.insert(email.to_string(), new_uid); 
-        let salt = random_string(16); // Generate a random salt 
+        let salt = random_alphanumeric_string(16); // Generate a random salt 
         let user = UserStorage { 
             username: username.to_string(), 
             email: email.to_string(), 
@@ -585,22 +589,29 @@ impl AuthManager {
         } 
     } 
 
-    pub async fn get_user_info(&self, token: String) -> Result<Value, FopError> { 
-        match self.token_list.authenticate_user(&token).await { 
-            Some(auth_uid) => { 
-                let users = self.users.read().await; 
-                if let Some(user) = users.get(&auth_uid) { 
+    pub async fn get_user_info(&self, token: String) -> Result<Value, FopError> {
+        println!("[AuthManager::get_user_info] Looking up token: {}", token);
+        match self.token_list.authenticate_user(&token).await {
+            Some(auth_uid) => {
+                println!("[AuthManager::get_user_info] Token valid, uid: {}", auth_uid);
+                let users = self.users.read().await;
+                if let Some(user) = users.get(&auth_uid) {
+                    println!("[AuthManager::get_user_info] Found user: {}", user.username);
                     Ok(object!({
-                        username: &user.username, 
-                        email: &user.email, 
+                        username: &user.username,
+                        email: &user.email,
                         uid: auth_uid
                     }))
                 } else {
+                    println!("[AuthManager::get_user_info] User not found for uid: {}", auth_uid);
                     Err(FopError::UserTooBig)
                 }
             },
-            _ => Err(FopError::TokenInvalid), 
-        } 
+            _ => {
+                println!("[AuthManager::get_user_info] Token not found in token_list");
+                Err(FopError::TokenInvalid)
+            },
+        }
     } 
 
     pub async fn list_users(&self) -> Vec<Value> {
@@ -641,8 +652,8 @@ mod test {
     use std::collections::HashMap;
     use tokio::sync::RwLock; 
 
-    use starberry::prelude::*; 
-    use starberry::starberry_lib::ende::aes; 
+    use hotaru::prelude::*; 
+    use hotaru_lib::ende::aes; 
 
     use crate::local_auth::fop::AuthManager; 
     use crate::local_auth::fop::TokenList;

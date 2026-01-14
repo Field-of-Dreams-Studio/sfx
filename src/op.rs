@@ -1,7 +1,10 @@
+pub use hotaru::prelude::*; 
+pub use hotaru::http::*; 
+pub use std::env;  
+
+use crate::user;
 use crate::user::User;
 pub use crate::APP; 
-pub use starberry::prelude::*; 
-pub use std::env;  
 
 static NAVBAR: Lazy<Value> = Lazy::new(|| {
     let mut path = env::current_dir().unwrap();
@@ -81,7 +84,7 @@ pub fn pageprop(req: &mut HttpReqCtx, title: &str, description: &str) -> Value {
         title: title, 
         color: "pink", 
         description: description,
-        keywords: "", //"Starberry, Akari, Project-StarFall",
+        keywords: "", //"Hotaru, Akari, Project-StarFall",
         nav: NAVBAR.get(&lang).clone(),
         foot: FOOTER.get(&lang).clone(), 
         user: user_value, 
@@ -123,6 +126,50 @@ pub fn get_admin() -> &'static Value {
     return &ADMINS 
 } 
 
+/// Convenience: pull the current `User` from `req.params` or fall back to `guest`.
+pub async fn get_user(req: &mut HttpReqCtx) -> User { 
+    user::fetch::get_user(req).await 
+} 
+
+/// Convenience: pull the current `User` from `req.params` or fall back to `guest`. 
+/// And then convert into UserID 
+pub async fn get_user_id(req: &mut HttpReqCtx) -> user::UserID { 
+    user::fetch::get_user_id(req).await 
+}
+
+middleware! { 
+    /// Middleware to redirect guest users to login page 
+    /// **MUST ADD AFTER UserFetch MIDDLEWARE** 
+    pub RedirectGuest <HTTP> { 
+        let user = get_user_id(&mut req).await; 
+        if user.is_guest() { 
+            req.response = redirect_response("/user/login"); 
+            return req 
+        } else { 
+            next(req).await 
+        } 
+    } 
+} 
+
+middleware! { 
+    /// Middleware to send unauthorized json response for guest users 
+    /// **MUST ADD AFTER UserFetch MIDDLEWARE** 
+    pub UnauthGuest <HTTP> { 
+        let user = get_user_id(&mut req).await; 
+        if user.is_guest() { 
+            req.response = json_response(object!({
+                success: false,
+                message: "Unauthorized"
+            })); 
+            return req 
+        } else { 
+            next(req).await 
+        } 
+    } 
+}
+
+pub use crate::admin::RedirectNonAdmin; 
+
 // !TODO! Optimize match, such as, 'zh-hant' when not supported use 'zh-xxx' or 'zh' first 
 /// Get the language from the request context 
 /// 
@@ -142,10 +189,9 @@ pub fn lang(req: &mut HttpReqCtx) -> String {
 
 /// Get the 'from' URL argument from the request context 
 pub fn from(req: &mut HttpReqCtx) -> String {
-    println!("From = {:?}", req.get_url_args("from")); 
-    req.get_url_args("from")
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| "/".to_string())
+    let from = req.query("from");
+    println!("From = {:?}", from); 
+    from.unwrap_or_else(|| "/".to_string())
 } 
 
 /// A type alias for a path object 
@@ -170,7 +216,7 @@ pub fn into_path(req: &mut HttpReqCtx, path: Vec<&str>) -> Value {
                 path: &current_path, 
                 name: name 
             })); 
-            current_path = format!("{}/{}", current_path, req.get_path(path_seg)); 
+            current_path = format!("{}/{}", current_path, req.segment(path_seg)); 
             path_seg += 1; 
         }); 
     let mut final_value = value.idx(value.len() - 1).clone(); 
@@ -201,60 +247,67 @@ pub fn get_localized_string(key: &str, lang: &str) -> String {
     let dict = L10N.get(key); 
     match dict.try_get(lang) {
         Ok(value) => value.string(), 
-        Err(starberry::akari::ValueError::KeyNotFoundError) => {
+        Err(hotaru::akari::ValueError::KeyNotFoundError) => {
             dict.get(default_lang()).string()
         }, 
         Err(_) => dict.string(), 
     } 
 } 
 
-/// Change the user's language by setting a cookie and redirecting to the same page 
-/// This may not work if running in http but not https 
-/// 
-/// # Request 
-/// `GET /op/lang/<lang>` 
-/// EMPTY 
-/// 
-/// # Response 
-/// A `HttpResponse` that redirects to the same page with the new language set in a cookie 
-#[url(reg![&APP, LitUrl("op"), LitUrl("lang"), ArgUrl("lang")])]
-async fn change_language() -> HttpResponse {
-    // println!("Changing language to: {}", req.get_arg("lang").unwrap_or(default_lang()));
-    redirect_response(
-        &from(req) 
-    ).add_cookie(
-        "lang",
-        Cookie::new(req.get_arg("lang").unwrap_or(default_lang()))
-            .path("/")
-            .http_only(true) 
-    )
+endpoint! {
+    APP.url("/op/lang/<lang>"),
+
+    /// Change the user's language by setting a cookie and redirecting to the same page
+    /// This may not work if running in http but not https
+    ///
+    /// # Request
+    /// `GET /op/lang/<lang>`
+    /// EMPTY
+    ///
+    /// # Response
+    /// A `HttpResponse` that redirects to the same page with the new language set in a cookie
+    pub change_language <HTTP> {
+        let lang = req.param("lang").unwrap_or_else(default_lang);
+        redirect_response(&from(req)).add_cookie(
+            "lang",
+            Cookie::new(lang)
+                .path("/")
+                .http_only(true) 
+        )
+    }
 }
 
-/// Serves the static files 
-/// 
-/// # Request 
-/// `GET /static/<path>`
-/// EMPTY
-///
-/// # Returns
-/// A `HttpResponse` containing the static file or a 404 error if not found
-#[url(reg![&APP, LitUrl("static"), AnyPath()])]
-async fn static_file() -> HttpResponse {
-    // println!("templates{}", req.path());
-    serve_static_file(&req.path()[1..])
+endpoint! {
+    APP.url("/static/<**path>"),
+
+    /// Serves the static files
+    ///
+    /// # Request
+    /// `GET /static/<**path>`
+    /// EMPTY
+    ///
+    /// # Returns
+    /// A `HttpResponse` containing the static file or a 404 error if not found
+    pub static_file <HTTP> {
+        println!("templates{}", req.path());
+        serve_static_file(&req.path()[1..])
+    }
 }
 
-/// Redirects to a given URL 
-/// 
-/// # Request
-/// `GET /redirect?url=<url>` 
-/// EMPTY 
-/// 
-/// # Returns 
-/// A `HttpResponse` that redirects to the specified URL 
-#[url(reg![&APP, LitUrl("redirect")])] 
-async fn redirect() -> HttpResponse {
-    let url = req.get_url_args("url").unwrap_or("/".to_string());
-    println!("Redirecting to: {}", url); 
-    redirect_response(&url)
-} 
+endpoint! {
+    APP.url("/redirect"),
+
+    /// Redirects to a given URL
+    ///
+    /// # Request
+    /// `GET /redirect?url=<url>`
+    /// EMPTY
+    ///
+    /// # Returns
+    /// A `HttpResponse` that redirects to the specified URL
+    pub redirect <HTTP> {
+        let url = req.query("url").unwrap_or_else(|| "/".to_string());
+        println!("Redirecting to: {}", url); 
+        redirect_response(&url)
+    }
+}

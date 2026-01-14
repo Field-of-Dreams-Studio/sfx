@@ -1,29 +1,39 @@
 [package]
 name = "sfx"
 version = "0.1.0"
-edition = "2024" 
-build = "build.rs"  
-authors = ["Redstone <redstone@fds.moe>"] 
-description = "SFX is a streamlined, full-stack Rust framework for building small web services with integrated authentication, localization, and config-driven UI components"  
-repository = "https://github.com/Field-of-Dreams-Studio/sfx" 
-homepage = "https://fds.rs/sfx/" 
-license = "MIT" 
-categories = ["network-programming", "web-programming::http-server" ] 
-keywords = ["full-stack", "web-framework"]  
-readme = "README.md"  
+edition = "2024"
+build = "build.rs"
+authors = ["Redstone <redstone@fds.moe>"]
+description = "SFX is a streamlined, full-stack Rust framework for building small web services with integrated authentication, localization, and config-driven UI components"
+repository = "https://github.com/Field-of-Dreams-Studio/sfx"
+homepage = "https://fds.rs/sfx/"
+license = "MIT"
+categories = ["network-programming", "web-programming::http-server" ]
+keywords = ["full-stack", "web-framework"]
+readme = "README.md"
+
+[lib]
+name = "sfx"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sfx"
+path = "src/main.rs"
+
 
 [dependencies]
-starberry = "0.6.4" 
-sbmstd = "0.6.3"
-tracing = "0.1.41" 
-ctor = "0.4.0" 
-clap = { version = "4.4", features = ["derive"] }  # CLI parsing
-anyhow = "1.0"  # Error handling
-include_dir = "0.7"  
-regex = "1.5.6"  
+hotaru = { version = "0.7.7" } 
+hotaru_lib = { version = "0.7.3" }
+htmstd = { version = "0.7" }  
+tracing = "0.1.41"
+ctor = "0.4.0"
+clap = { version = "4.4", features = ["derive"] }
+anyhow = "1.0"
+include_dir = "0.7"
+regex = "1.5.6"
 
 tokio = { version = "1.28", features = ["full"] }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
 jsonwebtoken = "9"
-once_cell = "1.21.3" 
+once_cell = "1.21.3"

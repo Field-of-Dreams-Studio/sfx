@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
-use clap::{Arg, ArgAction, ArgMatches, Command};
+use anyhow::Result;
+use clap::{Arg, ArgAction, Command};
 use include_dir::{include_dir, Dir, DirEntry};
 use std::{
     fs,
@@ -9,7 +9,8 @@ use std::{
 static TEMPLATE_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/default");
 
 fn main() -> Result<()> {
-    let matches = Command::new("project_init")
+    let matches = Command::new("sfx")
+        .about("SFX project scaffolding tool")
         .subcommand_required(true)
         .subcommand(
             Command::new("init")
@@ -53,7 +54,7 @@ fn main() -> Result<()> {
             let folder = sub_matches
                 .get_one::<String>("folder")
                 .expect("has default");
-            let target_dir = PathBuf::from(folder);
+            let target_dir = PathBuf::from(folder).join(program_name);
             create_project(program_name, &target_dir, false)?;
         }
         _ => unreachable!(),
@@ -83,13 +84,15 @@ fn create_project(project_name: &str, target_dir: &Path, force: bool) -> Result<
         "Project '{}' created at {}",
         project_name,
         target_dir.display()
-    ); 
+    );
     println!("The default admin user is 'Admin' with password 'Aa333333' in the Local server");
+    println!("\nTo run:");
+    println!("  cd {}", target_dir.display());
+    println!("  cargo run");
     Ok(())
 }
 
 fn is_valid_project_name(name: &str) -> bool {
-    // Must be non-empty and contain only alphanumeric characters or underscores
     !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
@@ -153,6 +156,7 @@ fn process_template_files(
 }
 
 fn replace_placeholders(content: &str, project_name: &str) -> String {
-    content.replace("{{project_name}}", project_name)
+    // Convert to valid Rust crate name (underscores)
+    let crate_name = project_name.replace('-', "_");
+    content.replace("{{crate_name}}", &crate_name)
 }
-mod resource;

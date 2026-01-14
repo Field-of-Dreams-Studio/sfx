@@ -62,10 +62,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "akari"
-version = "0.2.5"
+name = "ahttpm"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "463d643dde99b31d70db812cea99995a1261a696c2464c6fe15a5ce244d21e0b"
+checksum = "79d5a2ff4c281ccde88732ee3d97bba34b705411eb6c247f287cdfeef956a9b4"
+dependencies = [
+ "ctor",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
+
+[[package]]
+name = "akari"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29fc5ecf6848c1201733fa2ccdbeca413a901aae729c198a0010cc3e3d536e62"
 dependencies = [
  "akari_macro",
 ]
@@ -499,6 +511,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fnv"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
 name = "futures"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -666,6 +684,105 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
  "digest",
+]
+
+[[package]]
+name = "hotaru"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65ad23550ea8946170ff3a019fcd43545e862f7c27f9aa48174a482f020278d9"
+dependencies = [
+ "ahttpm",
+ "akari",
+ "futures",
+ "hotaru_core",
+ "hotaru_lib",
+ "hotaru_meta",
+ "once_cell",
+ "regex",
+ "tokio",
+]
+
+[[package]]
+name = "hotaru_core"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2152cb44abf6de606cea5c4788000550f303ec2d4ea8e2bedb273c196ecf7da"
+dependencies = [
+ "akari",
+ "async-trait",
+ "bytes",
+ "fnv",
+ "futures",
+ "futures-core",
+ "futures-util",
+ "hotaru_lib",
+ "http",
+ "include_dir",
+ "once_cell",
+ "parking_lot",
+ "regex",
+ "rustls",
+ "rustls-pemfile",
+ "rustls-platform-verifier",
+ "tokio",
+ "tokio-rustls",
+ "tokio-util",
+ "tracing",
+ "webpki-roots",
+]
+
+[[package]]
+name = "hotaru_lib"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72c006f8b72fc6ea8cd678647eaa5a792e36eab9836b3793fb79e4e4595430e6"
+dependencies = [
+ "aes-gcm",
+ "base64 0.21.7",
+ "brotli",
+ "flate2",
+ "hkdf",
+ "hmac",
+ "pbkdf2",
+ "percent-encoding",
+ "rand",
+ "sha2",
+ "zstd",
+]
+
+[[package]]
+name = "hotaru_meta"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4473f169efd7e3a7161d8ff659137bb1469c3016525f9de499d748be8c13ede3"
+dependencies = [
+ "hotaru_lib",
+]
+
+[[package]]
+name = "htmstd"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c13f8ae06467619774e056877e4e2ecec6ce6d0ab6b36fb87a582b760e5b314"
+dependencies = [
+ "akari",
+ "dashmap",
+ "hotaru_core",
+ "hotaru_lib",
+ "hotaru_meta",
+ "lazy_static",
+ "tokio",
+]
+
+[[package]]
+name = "http"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3ba2a386d7f85a81f119ad7498ebe444d2e22c2af0b86b069416ace48b3311a"
+dependencies = [
+ "bytes",
+ "itoa",
 ]
 
 [[package]]
@@ -1151,6 +1268,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustls-pemfile"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dce314e5fee3f39953d46bb63bb8a46d40c2f8fb7cc5a3b6cab2bde9721d6e50"
+dependencies = [
+ "rustls-pki-types",
+]
+
+[[package]]
 name = "rustls-pki-types"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1161,9 +1287,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-platform-verifier"
-version = "0.5.3"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19787cda76408ec5404443dc8b31795c87cd8fec49762dc75fa727740d34acc1"
+checksum = "1d99feebc72bae7ab76ba994bb5e121b8d83d910ca40b36e0921f53becc41784"
 dependencies = [
  "core-foundation",
  "core-foundation-sys",
@@ -1176,7 +1302,7 @@ dependencies = [
  "rustls-webpki",
  "security-framework",
  "security-framework-sys",
- "webpki-root-certs 0.26.11",
+ "webpki-root-certs",
  "windows-sys 0.59.0",
 ]
 
@@ -1219,21 +1345,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sbmstd"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e27dbc99b8b6df9dff8b248291390654fbc948a48bf4dcf14fe5609442572671"
-dependencies = [
- "akari",
- "dashmap",
- "lazy_static",
- "starberry_core",
- "starberry_lib",
- "starberry_macro",
- "tokio",
-]
-
-[[package]]
 name = "schannel"
 version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1250,9 +1361,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "security-framework"
-version = "3.2.0"
+version = "3.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "271720403f46ca04f7ba6f55d438f8bd878d6b8ca0a1046e8228c4145bcbb316"
+checksum = "b3297343eaf830f66ede390ea39da1d462b6b0c1b000f420d0a83f898bbbe6ef"
 dependencies = [
  "bitflags",
  "core-foundation",
@@ -1263,9 +1374,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework-sys"
-version = "2.14.0"
+version = "2.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49db231d56a190491cb4aeda9527f1ad45345af50b0851622a7adb8c03b01c32"
+checksum = "cc1f0cbffaac4852523ce30d8bd3c5cdc873501d96ff467ca09b6767bb8cd5c0"
 dependencies = [
  "core-foundation-sys",
  "libc",
@@ -1311,12 +1422,13 @@ dependencies = [
  "chrono",
  "clap",
  "ctor",
+ "hotaru",
+ "hotaru_lib",
+ "htmstd",
  "include_dir",
  "jsonwebtoken",
  "once_cell",
  "regex",
- "sbmstd",
- "starberry",
  "tokio",
  "tracing",
  "uuid",
@@ -1380,74 +1492,6 @@ checksum = "e22376abed350d73dd1cd119b57ffccad95b4e585a7cda43e286245ce23c0678"
 dependencies = [
  "libc",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "starberry"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "471be2ba2ac90623a6acec2ab0c31c0850272be7e908afffa20cf9141a2ef49e"
-dependencies = [
- "akari",
- "ctor",
- "futures",
- "once_cell",
- "regex",
- "starberry_core",
- "starberry_lib",
- "starberry_macro",
- "tokio",
-]
-
-[[package]]
-name = "starberry_core"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83f54ea0566ef8421332a40ab2906a24c4db39bcd876961d2df31a0cb5b19a7b"
-dependencies = [
- "akari",
- "async-trait",
- "futures",
- "include_dir",
- "once_cell",
- "regex",
- "rustls",
- "rustls-platform-verifier",
- "starberry_lib",
- "tokio",
- "tokio-rustls",
- "webpki-roots 0.26.11",
-]
-
-[[package]]
-name = "starberry_lib"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64de3a44928b6655db6243a685155f23b1eaeeadf1c9fb85e6362d5ab6138e3d"
-dependencies = [
- "aes-gcm",
- "base64 0.21.7",
- "brotli",
- "flate2",
- "hkdf",
- "hmac",
- "pbkdf2",
- "percent-encoding",
- "rand",
- "sha2",
- "zstd",
-]
-
-[[package]]
-name = "starberry_macro"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88a73532b4a95d853f9fd4fa03a6f5ffcd681d681fa9b2200442adc52ba29ad1"
-dependencies = [
- "ctor",
- "proc-macro2",
- "quote",
- "syn 2.0.104",
 ]
 
 [[package]]
@@ -1591,6 +1635,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e727b36a1a0e8b74c376ac2211e40c2c8af09fb4013c60d910495810f008e9b"
 dependencies = [
  "rustls",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-util"
+version = "0.7.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ae9cec805b01e8fc3fd2fe289f89149a9b66dd16786abd8b19cfa7b48cb0098"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-sink",
+ "pin-project-lite",
  "tokio",
 ]
 
@@ -1761,29 +1818,11 @@ dependencies = [
 
 [[package]]
 name = "webpki-root-certs"
-version = "0.26.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75c7f0ef91146ebfb530314f5f1d24528d7f0767efbfd31dce919275413e393e"
-dependencies = [
- "webpki-root-certs 1.0.1",
-]
-
-[[package]]
-name = "webpki-root-certs"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86138b15b2b7d561bc4469e77027b8dd005a43dc502e9031d1f5afc8ce1f280e"
 dependencies = [
  "rustls-pki-types",
-]
-
-[[package]]
-name = "webpki-roots"
-version = "0.26.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "521bc38abb08001b01866da9f51eb7c5d647a19260e00054a8c7fd5f9e57f7a9"
-dependencies = [
- "webpki-roots 1.0.1",
 ]
 
 [[package]]

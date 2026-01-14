@@ -1,7 +1,7 @@
-use sfx::prelude::*; 
-use {{project_name}}::APP; 
+use sfx::prelude::*;
+use {{crate_name}}::APP;
 
 #[tokio::main]
-async fn main() { 
-    APP.clone().run().await; 
-} 
+async fn main() {
+    APP.clone().run().await;
+}

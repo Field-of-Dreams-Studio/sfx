@@ -1,4 +1,4 @@
-use starberry::{HttpReqCtx, Value};
+use hotaru::Value;
 
 /// Represents a server or host where user accounts are stored. 
 /// `Local` is a special case for local-only accounts, while `MainAuth` is for accounts managed by the main authentication server. 

@@ -3,8 +3,9 @@
 //! Responsible for managing authentication tokens in the session, communicating with the
 //! remote auth/user service, and caching user info in the session store.
 
-use starberry::{prelude::*, HttpBody, HttpRequest}; 
-use sbmstd::session::CSessionRW;
+use hotaru::prelude::*; 
+use hotaru::http::*; 
+use htmstd::session::CSessionRW;
 use super::user::*;
 use super::Server; 
 
@@ -84,22 +85,33 @@ pub async fn fetch_user_info(host: Server, auth: String) -> Option<User> {
         request,
         HttpSafety::default(),
     )
-    .await; 
+    .await;
 
     if response.is_err() {
-        tracing::error!("fetch_user_info: request failed: {:?}", response);
+        println!("fetch_user_info: request failed: {:?}", response);
         return None;
-    } 
+    }
 
-    let response = response.unwrap(); 
+    let response = response.unwrap();
+    println!("fetch_user_info: response body type: {:?}", std::mem::discriminant(&response.body));
 
-    if let HttpBody::Json(body) = response.body {
-        // The JSON is assumed to be of the form { "user": { ... } }
-        let mut user_value = body.get("user").clone(); 
-        user_value.set("server", host.clone()); 
-        Some(user_value.into()) 
+    // Try to parse the body as JSON if it's a buffer
+    let body = response.body.parse_buffer(&HttpSafety::new());
+    println!("fetch_user_info: parsed body: {:?}", body);
+
+    if let HttpBody::Json(json) = body {
+        if json.get("success").boolean() {
+            // The JSON is assumed to be of the form { "success": true, "user": { ... } }
+            let mut user_value = json.get("user").clone();
+            user_value.set("server", host.clone());
+            println!("fetch_user_info: returning user: {:?}", user_value);
+            Some(user_value.into())
+        } else {
+            println!("fetch_user_info: success=false in response");
+            None
+        }
     } else {
-        tracing::warn!("fetch_user_info: unexpected response body: {:?}", response);
+        println!("fetch_user_info: unexpected response body: {:?}", body);
         None
     }
 }
@@ -161,7 +173,7 @@ async fn get_new_token(host: Server, token: String) -> Result<String, Value> {
     .await
     .unwrap();
 
-    if let HttpBody::Json(json) = response.body {
+    if let HttpBody::Json(json) = response.body.parse_buffer(&HttpSafety::new()) {
         if json.get("success").boolean() {
             Ok(json.get("access_token").string())
         } else {
@@ -200,7 +212,7 @@ pub async fn auth_server_health(host: Server) -> bool {
     .await
     .unwrap();
 
-    if let HttpBody::Json(json) = response.body {
+    if let HttpBody::Json(json) = response.body.parse_buffer(&HttpSafety::new()) {
         json.get("status").string() == "ok"
     } else {
         false
@@ -253,7 +265,7 @@ pub async fn disable_token(host: Server, token: String) -> Value {
     .await
     .unwrap();
 
-    if let HttpBody::Json(json) = response.body {
+    if let HttpBody::Json(json) = response.body.parse_buffer(&HttpSafety::new()) {
         json
     } else {
         object!({
