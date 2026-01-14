@@ -160,3 +160,5 @@ fn replace_placeholders(content: &str, project_name: &str) -> String {
     let crate_name = project_name.replace('-', "_");
     content.replace("{{crate_name}}", &crate_name)
 }
+
+mod resource;
