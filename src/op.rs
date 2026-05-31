@@ -68,30 +68,53 @@ const DEFAULT_ROBOTS: &str = "User-agent: *\nDisallow: /user/\nDisallow: /admin/
 //     }))
 // }
 
-/// Create a page property object for rendering 
-/// 
-/// # Arguments 
+/// Create a page property object for rendering, with explicit SEO `keywords`.
+///
+/// # Arguments
+/// * `req`         - The request context
+/// * `title`       - The title of the page
+/// * `description` - The description of the page
+/// * `keywords`    - Comma-separated `<meta name="keywords">` value
+///
+/// # Returns
+/// A `Value` object containing the page properties
+pub fn pageprop_with_keywords(
+    req: &mut HttpReqCtx,
+    title: &str,
+    description: &str,
+    keywords: &str,
+) -> Value {
+    let lang = lang(req);
+    let user_value: Value = req.params.get::<User>().unwrap().clone().into();
+    let path = req.path();
+    object!({
+        lang: &lang,
+        title: title,
+        color: "pink",
+        description: description,
+        keywords: keywords,
+        nav: NAVBAR.get(&lang).clone(),
+        foot: FOOTER.get(&lang).clone(),
+        user: user_value,
+        path: path,
+    })
+}
+
+/// Create a page property object for rendering.
+///
+/// Convenience wrapper around `pageprop_with_keywords` that leaves the SEO
+/// `keywords` field empty. Pages that want to populate
+/// `<meta name="keywords">` should call `pageprop_with_keywords` directly.
+///
+/// # Arguments
 /// * `req` - The request context
 /// * `title` - The title of the page
 /// * `description` - The description of the page
-/// 
+///
 /// # Returns
-/// A `Value` object containing the page properties 
+/// A `Value` object containing the page properties
 pub fn pageprop(req: &mut HttpReqCtx, title: &str, description: &str) -> Value {
-    let lang = lang(req); 
-    let user_value: Value = req.params.get::<User>().unwrap().clone().into(); 
-    let path = req.path(); 
-    object!({
-        lang: &lang,
-        title: title, 
-        color: "pink", 
-        description: description,
-        keywords: "", //"Hotaru, Akari, Project-StarFall",
-        nav: NAVBAR.get(&lang).clone(),
-        foot: FOOTER.get(&lang).clone(), 
-        user: user_value, 
-        path: path, 
-    })
+    pageprop_with_keywords(req, title, description, "")
 }
 
 /// Render a 403 Forbidden HTML page inside the site chrome.

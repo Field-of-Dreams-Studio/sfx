@@ -400,6 +400,29 @@ User dashboard (requires valid session)
 Access denied page  
 *Renders*: `user/unauthorized.html`  
 
+##### `op::pageprop` / `op::pageprop_with_keywords`
+
+`pageprop(req, title, description)` builds the standard page properties
+(`lang`, `title`, `description`, `nav`, `foot`, `user`, `path`, etc.) and
+leaves `<meta name="keywords">` empty.
+
+To populate per-page SEO keywords without rebuilding the dict, call
+`pageprop_with_keywords` instead:
+
+```rust
+use sfx::op;
+
+let pp = op::pageprop_with_keywords(
+    req,
+    "Constitution",
+    "The constitution of the project",
+    "hotaru, akari, project starfall",
+);
+```
+
+The four-argument form is the canonical entry point; `pageprop` is the
+zero-keywords convenience wrapper.
+
 ##### `op::forbidden_response(req, message)` helper
 
 For permission-gated endpoints, prefer this helper over
