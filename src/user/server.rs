@@ -40,7 +40,7 @@ impl Server {
     /// Get the actual address of the server. 
     pub fn get_address(&self) -> String { 
         if self.is_local() { 
-            format!("http://{}", crate::op::APP.binding_address)
+            format!("http://{}", crate::op::APP.binding)
         } else {
             format!("https://{}", self.get_host())
         } 

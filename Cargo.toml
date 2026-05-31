@@ -1,6 +1,6 @@
 [package]
 name = "sfx"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 build = "build.rs"
 authors = ["Redstone <redstone@fds.moe>"]
@@ -22,9 +22,9 @@ path = "src/main.rs"
 
 
 [dependencies]
-hotaru = { version = "0.7.7" } 
-hotaru_lib = { version = "0.7.3" }
-htmstd = { version = "0.7" }  
+hotaru = "0.8.2"
+hotaru_lib = "0.8.2"
+htmstd = "0.8.2"
 tracing = "0.1.41"
 ctor = "0.4.0"
 clap = { version = "4.4", features = ["derive"] }

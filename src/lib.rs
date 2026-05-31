@@ -1,35 +1,35 @@
 use hotaru::prelude::*;
 use hotaru::http::*;
-use htmstd::{CookieSession, PrintLog}; 
+use htmstd::{CookieSession, PrintLog};
 
-pub mod prelude { 
+pub mod prelude {
     pub use hotaru::prelude::*;
     pub use hotaru::http::*;
-    pub use htmstd::{CookieSession, PrintLog, Cors, cors_settings}; 
-    pub use hotaru; 
-} 
+    pub use htmstd::{CookieSession, PrintLog, Cors, cors_settings};
+    pub use hotaru;
+}
 
-pub use hotaru; 
+pub use hotaru;
 
-pub mod op; 
-pub mod user; 
-pub mod local_auth; 
-pub mod admin; 
+pub mod op;
+pub mod user;
+pub mod local_auth;
+pub mod admin;
 
-pub static APP: SApp = Lazy::new(|| {
-    App::new()
-        // .mode(RunMode::Build) 
+pub static APP: SServer = Lazy::new(|| {
+    Server::new()
+        // .mode(RunMode::Build)
         .binding(op::BINDING.clone())
-        .max_connection_time(10) 
+        .max_connection_time(TimeoutSetting::Seconds(10))
         .single_protocol(ProtocolBuilder::new(HTTP::server(HttpSafety::default()))
-            .append_middleware::<PrintLog>() 
-            .append_middleware::<CookieSession>() 
-            .append_middleware::<user::UserFetch>() 
-        ) 
+            .append_middleware::<PrintLog>()
+            .append_middleware::<CookieSession>()
+            .append_middleware::<user::UserFetch>()
+        )
         .set_config(
-            prelude::cors_settings::AppCorsSettings::new() 
-        ).build() 
-}); 
+            prelude::cors_settings::AppCorsSettings::new()
+        ).build()
+});
 
 // endpoint! {
 //     APP.url("/"),

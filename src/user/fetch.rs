@@ -3,11 +3,73 @@
 //! Responsible for managing authentication tokens in the session, communicating with the
 //! remote auth/user service, and caching user info in the session store.
 
-use hotaru::prelude::*; 
-use hotaru::http::*; 
+use hotaru::prelude::*;
+use hotaru::http::*;
+use hotaru::TcpOutbound;
+use hotaru::hotaru_http::protocol::HttpError;
 use htmstd::session::CSessionRW;
 use super::user::*;
-use super::Server; 
+use super::Server;
+
+/// Thin wrapper around `hotaru_http::send_request` that handles the old
+/// 0.7-style `(host_url, request, safety)` shape: parses the scheme/host/port
+/// out of an `http://...` URL, builds a `TcpOutbound`, sets the `Host` header
+/// if absent, and runs one request/response. HTTPS support requires the
+/// `https` feature on `hotaru` (not enabled in this project).
+pub async fn send_http_request(
+    host: impl Into<String>,
+    mut request: HttpRequest,
+    safety: HttpSafety,
+) -> Result<HttpResponse, HttpError> {
+    let host_str = host.into();
+    let (is_https, without_scheme) = if let Some(rest) = host_str.strip_prefix("https://") {
+        (true, rest.to_string())
+    } else if let Some(rest) = host_str.strip_prefix("http://") {
+        (false, rest.to_string())
+    } else {
+        (false, host_str.clone())
+    };
+
+    let (host_part, port, explicit_port) = match without_scheme.rfind(':') {
+        Some(colon) => {
+            let candidate = &without_scheme[colon + 1..];
+            if !candidate.is_empty()
+                && candidate.len() <= 5
+                && candidate.chars().all(|c| c.is_ascii_digit())
+            {
+                if let Ok(p) = candidate.parse::<u16>() {
+                    (without_scheme[..colon].to_string(), p, true)
+                } else {
+                    (without_scheme.clone(), if is_https { 443 } else { 80 }, false)
+                }
+            } else {
+                (without_scheme.clone(), if is_https { 443 } else { 80 }, false)
+            }
+        }
+        None => (without_scheme.clone(), if is_https { 443 } else { 80 }, false),
+    };
+
+    if request.meta.get_host().is_none() {
+        let host_header = if explicit_port {
+            format!("{}:{}", host_part, port)
+        } else {
+            host_part.clone()
+        };
+        request.meta.set_host(Some(host_header));
+    }
+
+    if is_https {
+        return Err(HttpError::Io(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            "HTTPS outbound is not enabled in this build (requires the hotaru `https` feature)",
+        )));
+    }
+
+    let outbound = TcpOutbound::build(format!("{}:{}", host_part, port))
+        .await
+        .map_err(HttpError::Io)?;
+    send_request(&outbound, request, safety).await
+}
 
 /// Store the given authentication token in the HTTP-session under `"auth_token"`.
 ///
@@ -80,7 +142,7 @@ pub fn get_host(req: &HttpReqCtx) -> Server {
 pub async fn fetch_user_info(host: Server, auth: String) -> Option<User> {
     println!("fetch_user_info: sending request to {}, token: {}", host.get_address(), auth);
     let request = request_with_auth_token(get_request("/users/me"), Some(auth));
-    let response = HttpResCtx::send_request(
+    let response = send_http_request(
         host.get_address(),
         request,
         HttpSafety::default(),
@@ -165,7 +227,7 @@ async fn get_new_token(host: Server, token: String) -> Result<String, Value> {
     tracing::info!(%token, "Requesting new token from auth server");
     let request = get_request("/auth/refresh")
         .add_header("Authorization", format!("Bearer {}", token));
-    let response = HttpResCtx::send_request(
+    let response = send_http_request(
         host.get_address(), 
         request,
         HttpSafety::default(),
@@ -204,7 +266,7 @@ pub fn cache_user_info(req: &mut HttpReqCtx, user: User) {
 /// Check the health endpoint (`/health`) of the auth server. Returns `true` if
 /// the JSON `{ "status": "ok" }` is returned, else `false`.
 pub async fn auth_server_health(host: Server) -> bool {
-    let response = HttpResCtx::send_request(
+    let response = send_http_request(
         host.get_address(),
         get_request("/health"),
         HttpSafety::default(),
@@ -236,14 +298,21 @@ pub async fn logout(req: &mut HttpReqCtx) -> HttpResponse {
 
 /// Immediately mutate `req.response` to redirect through `/user/refresh`.
 ///
+/// Preserves the original path **and** query string so that the eventual
+/// hop to the destination keeps callers' parameters intact (e.g.
+/// `/op/lang/en?from=/user/home`). The value is percent-encoded because
+/// the hotaru query parser splits on `=` and would otherwise mis-segment
+/// a redirect value that itself contains `?`/`=`.
+///
 /// # Arguments
 ///
 /// * `req` – mutable reference to the current request context
 pub fn redirect_refresh(req: &mut HttpReqCtx) {
-    let redirect_url = req.path();
+    let redirect_url = req.request.meta.url();
+    let encoded = hotaru_lib::url_encoding::encode_url_owned(&redirect_url);
     req.response = redirect_response(&format!(
         "/user/refresh?redirect={}",
-        redirect_url
+        encoded
     ));
 }
 
@@ -257,7 +326,7 @@ pub fn redirect_refresh(req: &mut HttpReqCtx) {
 pub async fn disable_token(host: Server, token: String) -> Value {
     let request = get_request("/auth/logout")
         .add_header("Authorization", format!("Bearer {}", token));
-    let response = HttpResCtx::send_request(
+    let response = send_http_request(
         host.get_address(),
         request,
         HttpSafety::default(),

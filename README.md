@@ -18,39 +18,68 @@ https://fds.rs/sfx/tutorial/0.1.3/
 
 ## Endpoints 
 
-### `/op/lang/<lang>` 
+### `/op/lang/<lang>`
 
-Change the user's language by setting a cookie and redirecting to the same page 
-This may not work if running in http but not https 
+Change the user's language by setting a cookie and redirecting back to the
+page they came from (resolved via the `Referer` header — see
+`op::from(req)`). This may not work if running in http but not https.
 
-##### Request 
-`GET /op/lang/<lang>` 
-EMPTY 
+##### Request
+`GET /op/lang/<lang>`
+EMPTY
 
-##### Response 
-A `HttpResponse` that redirects to the same page with the new language set in a cookie 
+##### Response
+A `HttpResponse` that redirects to the previous page with the new language set in a cookie
 
-Serves the static files 
+##### Language resolution
 
-**`/static/<path>` 
+`op::lang(req)` (used by `pageprop`, `into_path_l`, etc.) resolves in this
+order, accepting a value only if it appears in `support_lang.json`:
 
-##### Request 
+1. `?lang=<code>` query parameter — used by crawlers and
+   `<link rel="alternate" hreflang>` so each language has its own crawlable URL.
+2. `lang` cookie — set by the footer language switcher for human users.
+3. `default_lang()` — the first entry in `support_lang.json`.
+
+`op::lang_or_none(req)` returns `None` at step 3 instead of the default, so
+downstream apps can insert their own fallback (e.g. a `/<code>/...` URL
+prefix scheme) between SFX's query/cookie layer and the site default.
+
+### `/static/<path>`
+
+Serves the static files
+
+##### Request
 `GET /static/<path>`
 EMPTY
 
 ##### Returns
 A `HttpResponse` containing the static file or a 404 error if not found
 
-### `/redirect?url=<url>` 
+### `/redirect?url=<url>`
 
-Redirects to a given URL 
+Redirects to a given URL
 
 ##### Request
-`GET /redirect?url=<url>` 
-EMPTY 
+`GET /redirect?url=<url>`
+EMPTY
 
-##### Returns 
-A `HttpResponse` that redirects to the specified URL  
+##### Returns
+A `HttpResponse` that redirects to the specified URL
+
+### `/robots.txt`
+
+Serves crawler directives. Reads `programfiles/op/robots.txt` from the
+current working directory if present, otherwise returns a built-in default
+that disallows `/user/` and `/admin/`. Consumers can override by shipping
+their own file at that path.
+
+##### Request
+`GET /robots.txt`
+EMPTY
+
+##### Returns
+A `text/plain` `HttpResponse` with the robots directives.
 
 ## Settings 
 
@@ -273,12 +302,25 @@ Directly write your location in `programfiles/op/binding.txt`
 ### User Endpoints
 
 #### 1. Login Flow
-**`GET /user/login`**  
-Renders login page with language-specific content  
-*Response*: HTML page with:  
-- Localized navbar/footer  
-- Host selection dropdown (from `hosts.json`)  
-- Login form  
+**`GET /user/login[?next=<path>]`**  
+Renders login page with language-specific content.
+
+The optional `?next=<path>` query carries the URL the user should land on
+after a successful login. The shipped `login.html` JS picks a post-login
+redirect target in this order:
+
+1. `?next=<path>` on the login URL, if it is a same-origin path (starts
+   with `/` and not `//`).
+2. `document.referrer` if it is same-origin and not `/user/login` itself.
+3. `/` as a safe fallback.
+
+This is also the target for `op::forbidden_response`'s "Log in" link, so a
+403 → login → original page round trip preserves the user's location.
+
+*Response*: HTML page with:
+- Localized navbar/footer
+- Host selection dropdown (from `hosts.json`)
+- Login form
 
 **`POST /user/login`**  
 Authenticates user credentials  
@@ -357,6 +399,30 @@ User dashboard (requires valid session)
 **`GET /user/unauthorized`**  
 Access denied page  
 *Renders*: `user/unauthorized.html`  
+
+##### `op::forbidden_response(req, message)` helper
+
+For permission-gated endpoints, prefer this helper over
+`text_response("403 Forbidden")` so users stranded on a gated URL after
+their session expires still see the site chrome.
+
+```rust
+use sfx::op;
+
+if !user.can_edit() {
+    return op::forbidden_response(req, Some("You need write permission to edit this resource."));
+}
+```
+
+Returns an `HttpResponse` with status `403` whose body renders
+`user/forbidden.html` with:
+- `pageprop` — standard page properties (navbar + footer + lang)
+- `message` — caller-supplied explanation, or a generic default if `None`
+- `next` — the current request URL, percent-encoded, suitable for building
+  a `/user/login?next=<next>` recovery link in the template
+
+The shipped template provides "Log in" (→ `/user/login?next=<current>`)
+and "Back to view" (→ the current path with query stripped) buttons.
 
 ---
 

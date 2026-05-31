@@ -1,6 +1,5 @@
 use hotaru::prelude::*;
 use hotaru::http::*;
-use hotaru::hotaru_core::http::start_line::HttpStartLine;
 
 use htmstd::session::CSessionRW;
 use std::collections::HashMap;
@@ -54,7 +53,7 @@ endpoint! {
                 })),
             );
             println!("Server: {}, Address: {}", host, host.get_address());
-            let response = HttpResCtx::send_request(&host.get_address(), request_content, HttpSafety::default())
+            let response = send_http_request(&host.get_address(), request_content, HttpSafety::default())
                 .await
                 .unwrap();
             println!("Response: {:?}", response);
@@ -111,7 +110,9 @@ endpoint! {
     /// This will refresh the user token and redirect to the specified URL 
     pub refresh_route <HTTP> {
         refresh_user_token(req).await;
-        redirect_response(&req.query("redirect").unwrap_or_else(|| "/".to_string()))
+        let raw = req.query("redirect").unwrap_or_else(|| "/".to_string());
+        let decoded = hotaru_lib::url_encoding::decode_url_owned(&raw);
+        redirect_response(&decoded)
     }
 }
 
@@ -281,7 +282,7 @@ endpoint! {
                 message: "Invalid old or new password"
             }));
         }
-        let response = HttpResCtx::send_request(
+        let response = send_http_request(
             host.get_address(),
             request_with_auth_token(
                 json_request(

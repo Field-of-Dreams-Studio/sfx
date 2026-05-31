@@ -73,12 +73,24 @@
                     errorDiv.textContent = json.message || 'Invalid credentials';
                     errorDiv.style.display = 'block';
                 } else {
-                    // login succeeded
-                    // window.location.href = '/user/refresh?redirect=/'; 
-                        // Add a small delay before redirecting
+                    // login succeeded — pick a redirect target:
+                    //   1) ?next=<path> on this URL (must be same-origin path)
+                    //   2) document.referrer if same-origin and not /user/login
+                    //   3) "/" as a safe fallback
+                    const params = new URLSearchParams(window.location.search);
+                    const next = params.get('next');
+                    let target = '/';
+                    if (next && next.startsWith('/') && !next.startsWith('//')) {
+                        target = next;
+                    } else if (document.referrer && document.referrer.startsWith(window.location.origin)) {
+                        const url = new URL(document.referrer);
+                        if (url.pathname !== '/user/login') {
+                            target = url.pathname + url.search;
+                        }
+                    }
                     setTimeout(() => {
-                        window.location.href = '/';
-                    }, 500); // 500 ms delay 
+                        window.location.href = target;
+                    }, 500);
                     errorDiv.textContent = json.message || 'Logged in successfully. Redirecting...';
                     errorDiv.style.display = 'block';
                 }

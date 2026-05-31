@@ -15,18 +15,18 @@ pub async fn check_is_admin(req: &mut HttpReqCtx) -> bool {
     op::get_admin().contains(&user) 
 }  
 
-middleware! { 
-    /// Middleware to redirect non-admin users to unauthorized page 
-    /// **MUST ADD AFTER UserFetch MIDDLEWARE**  
-    pub RedirectNonAdmin <HTTP> { 
-        if check_is_admin(&mut req).await { 
-            req.response = redirect_response("/user/unauthorized"); 
-            return req 
-        } else { 
-            next(req).await 
-        } 
-    } 
-} 
+middleware! {
+    /// Middleware to redirect non-admin users to unauthorized page
+    /// **MUST ADD AFTER UserFetch MIDDLEWARE**
+    pub RedirectNonAdmin <HTTP> {
+        if !check_is_admin(&mut req).await {
+            req.response = redirect_response("/user/unauthorized");
+            return Ok(req)
+        } else {
+            next(req).await
+        }
+    }
+}
 
 pub fn check_is_admin_id(id: UserID) -> bool {
     println!("check_is_admin_id: user: {}, admins: {}, is_admin: {}", id, op::get_admin(), op::get_admin().contains(&object!(id.to_string())));

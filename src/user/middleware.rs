@@ -57,7 +57,7 @@ middleware! {
                 // Avoid redirect loop: don't redirect if already on /user/refresh
                 if !req.path().starts_with("/user/refresh") {
                     redirect_refresh(&mut req);
-                    return req // This is correct because redirect_refresh already write the request in context
+                    return Ok(req) // This is correct because redirect_refresh already write the request in context
                 }
                 return next(req).await;
             }

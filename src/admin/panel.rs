@@ -1,12 +1,13 @@
 use hotaru::prelude::*;
 use hotaru::http::*;
 use crate::admin::check_is_admin;
-use crate::op::{self, into_path_l, pageprop}; 
-use crate::APP; 
+use crate::op::{self, into_path_l, pageprop};
+use crate::user::fetch::send_http_request;
+use crate::APP;
 
 async fn admin_fetch_json(req: &mut HttpReqCtx, path: &str) -> Option<Value> {
     let full_host: String = format!("http://{}", op::BINDING.clone()); 
-    let response = HttpResCtx::send_request(
+    let response = send_http_request(
         full_host.clone(),
         get_request(path)
             .add_cookie("session_id", req.get_cookie_or_default("session_id")) 
