@@ -52,7 +52,7 @@ endpoint! {
         match LOCAL_AUTH.get_user_info(token.clone()).await {
             Ok(mut user) => {
                 println!("[/users/me] SUCCESS - found user: {:?}", user);
-                user += object!({ is_active: true, is_verified: true });
+                user += object!({ is_verified: true });
                 akari_json!({ success: true, user: user })
             },
             Err(err) => {

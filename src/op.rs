@@ -5,6 +5,8 @@ pub use std::env;
 use crate::user;
 use crate::user::User;
 pub use crate::APP; 
+use std::path::PathBuf;
+use std::sync::RwLock;
 
 static NAVBAR: Lazy<Value> = Lazy::new(|| {
     let mut path = env::current_dir().unwrap();
@@ -30,10 +32,10 @@ static L10N: Lazy<Value> = Lazy::new(|| {
     Value::from_jsonf(path.to_str().unwrap()).unwrap_or(Value::None)
 }); 
 
-static ADMINS : Lazy<Value> = Lazy::new(|| {
+static ADMINS : Lazy<RwLock<Value>> = Lazy::new(|| {
     let mut path = env::current_dir().unwrap();
     path.push("programfiles/admin_info/admins.json");
-    Value::from_jsonf(path.to_str().unwrap()).unwrap_or(Value::None)
+    RwLock::new(Value::from_jsonf(path.to_str().unwrap()).unwrap_or(Value::None))
 }); 
 
 static TRUSTED_ORIGIN : Lazy<Value> = Lazy::new(|| {
@@ -171,8 +173,51 @@ pub fn get_default_host() -> String {
 } 
 
 /// Get the admin list 
-pub fn get_admin() -> &'static Value { 
-    return &ADMINS 
+pub fn get_admin() -> Value { 
+    ADMINS.read().unwrap().clone()
+}
+
+fn admin_info_path() -> PathBuf {
+    let mut path = env::current_dir().unwrap();
+    path.push("programfiles/admin_info/admins.json");
+    path
+}
+
+pub fn read_admin_entries() -> Vec<String> {
+    get_admin()
+        .list()
+        .iter()
+        .map(|entry| entry.string())
+        .filter(|entry| !entry.is_empty())
+        .collect()
+}
+
+fn write_admin_entries(entries: &[String]) -> std::io::Result<()> {
+    let path = admin_info_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let value = Value::new(entries.to_vec());
+    value.clone()
+        .into_jsonf(path.to_str().unwrap())
+        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, format!("{:?}", err)))?;
+    *ADMINS.write().unwrap() = value;
+    Ok(())
+}
+
+pub fn add_admin_entry(entry: &str) -> std::io::Result<()> {
+    let mut entries = read_admin_entries();
+    if !entries.iter().any(|current| current == entry) {
+        entries.push(entry.to_string());
+        write_admin_entries(&entries)?;
+    }
+    Ok(())
+}
+
+pub fn remove_admin_entry(entry: &str) -> std::io::Result<()> {
+    let mut entries = read_admin_entries();
+    entries.retain(|current| current != entry);
+    write_admin_entries(&entries)
 } 
 
 /// Convenience: pull the current `User` from `req.params` or fall back to `guest`.

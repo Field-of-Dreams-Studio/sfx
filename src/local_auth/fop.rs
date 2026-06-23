@@ -54,6 +54,7 @@ pub struct UserStorage {
     pub password_hash: String,
     pub password_salt: String,
     pub profile: Value, 
+    pub is_active: bool,
 }
 
 impl UserStorage {
@@ -63,7 +64,8 @@ impl UserStorage {
             email: value.get("email").string(), 
             password_hash: value.get("password_hash").string(),
             password_salt: value.get("password_salt").string(),
-            profile: value.get("profile").clone() 
+            profile: value.get("profile").clone(),
+            is_active: value.try_get("is_active").map(|v| v.boolean()).unwrap_or(true),
         }
     }
 
@@ -73,15 +75,18 @@ impl UserStorage {
             email: &self.email, 
             password_hash: &self.password_hash,
             password_salt: &self.password_salt,
-            profile: self.profile.clone() 
+            profile: self.profile.clone(),
+            is_active: self.is_active,
         })
     } 
 
-    fn into_json_without_password(&self) -> Value {
+    fn into_json_without_password(&self, uid: u32) -> Value {
         object!({
+            uid: uid,
             username: &self.username, 
             email: &self.email, 
-            profile: self.profile.clone() 
+            profile: self.profile.clone(),
+            is_active: self.is_active,
         })
     } 
 } 
@@ -272,6 +277,9 @@ impl AuthManager {
     pub async fn check_password(&self, uid: u32, password: &str) -> bool {
         let guard = self.users.read().await;
         if let Some(user) = guard.get(&uid) {
+            if !user.is_active {
+                return false;
+            }
             // println!("{:?}", aes::decrypt(&user.password_hash, &user.password_salt)); 
             if aes::decrypt(&user.password_hash, &user.password_salt) == Ok(password.to_string()) { 
                 return true 
@@ -287,6 +295,9 @@ impl AuthManager {
         if let Some(uid) = self.token_list.authenticate_user(token).await {
             let guard = self.users.read().await;
             if let Some(user) = guard.get(&uid) {
+                if !user.is_active {
+                    return Err(FopError::UserInactive);
+                }
                 Ok(user.into_json())
             } else {
                 Err(FopError::UserNotFound)
@@ -332,6 +343,13 @@ impl AuthManager {
     /// The old token should be valid
     pub async fn refresh_token(&self, old_token: &str) -> Result<String, FopError> {
         if let Some(uid) = self.token_list.authenticate_user(old_token).await {
+            let users = self.users.read().await;
+            match users.get(&uid) {
+                Some(user) if user.is_active => {}
+                Some(_) => return Err(FopError::UserInactive),
+                None => return Err(FopError::UserNotFound),
+            }
+            drop(users);
             let new_token = random_alphanumeric_string(32);
             let expires = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() + 3600; // 1 hour
             self.token_list.add(new_token.clone(), uid, expires).await;
@@ -366,6 +384,15 @@ impl AuthManager {
     /// - Any character in the username should be either alphabetical, numerical or within [",", ".", "_", "+", "-", "(", ")", "[", "]", "{", "}", "|"] 
     /// - It should not conflict with other usernames 
     pub async fn validate_username(&self, username: &str) -> bool { 
+        if !Self::validate_username_format(username) {
+            return false;
+        }
+        let usernames = self.username_map.read().await;
+        println!("Checking against existing usernames: {:?}", usernames);
+        !usernames.contains_key(username)
+    } 
+
+    fn validate_username_format(username: &str) -> bool {
         println!("Validating username: {}/", username);
         // Rule #1: non-empty and first char is ASCII letter
         let mut chars = username.chars();
@@ -387,12 +414,8 @@ impl AuthManager {
                 _ => return false,
             }
         }
-
-        // Rule #3: must not already exist
-        let usernames = self.username_map.read().await;
-        println!("Checking against existing usernames: {:?}", usernames);
-        !usernames.contains_key(username)
-    } 
+        true
+    }
 
     /// Validate an email address according to the following rules:
     /// 1. It must start with an ASCII alphabetic character (A–Z or a–z).
@@ -402,6 +425,15 @@ impl AuthManager {
     ///    - one of the punctuation: , . _ + - ( ) [ ] { } |
     /// 4. It must not conflict with any existing email in the in-memory map.
     pub async fn validate_email(&self, email: &str) -> bool {
+        if !Self::validate_email_format(email) {
+            return false;
+        }
+        // Rule #4: must not already exist
+        let emails = self.email_map.read().await;
+        !emails.contains_key(email)
+    } 
+
+    fn validate_email_format(email: &str) -> bool {
         let mut chars = email.chars();
         // Rule #1: non-empty and first char is ASCII letter
         match chars.next() {
@@ -431,10 +463,8 @@ impl AuthManager {
                 }
             }
         }
-        // Rule #4: must not already exist
-        let emails = self.email_map.read().await;
-        !emails.contains_key(email)
-    } 
+        true
+    }
 
     /// Generate a new uid where increasing max uid 
     pub async fn new_uid(&self) -> u32 { 
@@ -528,7 +558,8 @@ impl AuthManager {
             email: email.to_string(), 
             password_hash: aes::encrypt(password, &salt).unwrap(), // Use a random salt
             password_salt: salt, 
-            profile: object!({}) 
+            profile: object!({}),
+            is_active: true,
         }; 
         self.users.write().await.insert(new_uid, user); 
         Ok(()) 
@@ -551,6 +582,7 @@ impl AuthManager {
                     existing_user.password_hash = user.password_hash; 
                     existing_user.password_salt = user.password_salt; 
                     existing_user.profile = user.profile; 
+                    existing_user.is_active = user.is_active;
                     Ok(())
                 } else {
                     Err(FopError::UserTooBig)
@@ -566,6 +598,9 @@ impl AuthManager {
             Some(auth_uid) => { 
                 let users = self.users.read().await; 
                 if let Some(user) = users.get(&auth_uid) { 
+                    if !user.is_active {
+                        return Err(FopError::UserInactive);
+                    }
                     Ok(user.profile.clone())
                 } else {
                     Err(FopError::UserTooBig)
@@ -580,6 +615,9 @@ impl AuthManager {
             Some(auth_uid) => { 
                 let users = self.users.read().await; 
                 if let Some(user) = users.get(&auth_uid) { 
+                    if !user.is_active {
+                        return Err(FopError::UserInactive);
+                    }
                     Ok(user.clone())
                 } else {
                     Err(FopError::UserTooBig)
@@ -596,11 +634,15 @@ impl AuthManager {
                 println!("[AuthManager::get_user_info] Token valid, uid: {}", auth_uid);
                 let users = self.users.read().await;
                 if let Some(user) = users.get(&auth_uid) {
+                    if !user.is_active {
+                        return Err(FopError::UserInactive);
+                    }
                     println!("[AuthManager::get_user_info] Found user: {}", user.username);
                     Ok(object!({
                         username: &user.username,
                         email: &user.email,
-                        uid: auth_uid
+                        uid: auth_uid,
+                        is_active: user.is_active,
                     }))
                 } else {
                     println!("[AuthManager::get_user_info] User not found for uid: {}", auth_uid);
@@ -615,19 +657,113 @@ impl AuthManager {
     } 
 
     pub async fn list_users(&self) -> Vec<Value> {
-        let users = self.users.read().await;
-        users.values().map(|user| user.into_json_without_password()).collect()
+        self.admin_list_users()
+            .await
+            .into_iter()
+            .map(|(uid, user)| user.into_json_without_password(uid))
+            .collect()
     } 
+
+    pub async fn admin_list_users(&self) -> Vec<(u32, UserStorage)> {
+        let users = self.users.read().await;
+        let mut users: Vec<(u32, UserStorage)> =
+            users.iter().map(|(uid, user)| (*uid, user.clone())).collect();
+        users.sort_by_key(|(uid, _)| *uid);
+        users
+    }
+
+    pub async fn admin_get_user(&self, uid: u32) -> Option<UserStorage> {
+        self.users.read().await.get(&uid).cloned()
+    }
+
+    pub async fn admin_edit_user(
+        &self,
+        uid: u32,
+        new_username: Option<String>,
+        new_email: Option<String>,
+        new_is_active: Option<bool>,
+    ) -> Result<(), FopError> {
+        if let Some(username) = &new_username {
+            if !Self::validate_username_format(username) {
+                return Err(FopError::UserNameNotValid);
+            }
+        }
+
+        if let Some(email) = &new_email {
+            if !Self::validate_email_format(email) {
+                return Err(FopError::EmailNotValid);
+            }
+        }
+
+        let mut username_map = self.username_map.write().await;
+        let mut email_map = self.email_map.write().await;
+        let mut users = self.users.write().await;
+        let user = users.get_mut(&uid).ok_or(FopError::UserNotFound)?;
+
+        if let Some(username) = &new_username {
+            if username_map.get(username).is_some_and(|owner| *owner != uid) {
+                return Err(FopError::UserNameConflict);
+            }
+        }
+        if let Some(email) = &new_email {
+            if email_map.get(email).is_some_and(|owner| *owner != uid) {
+                return Err(FopError::EmailConflict);
+            }
+        }
+
+        if let Some(username) = &new_username {
+            username_map.remove(&user.username);
+            username_map.insert(username.clone(), uid);
+        }
+        if let Some(email) = &new_email {
+            email_map.remove(&user.email);
+            email_map.insert(email.clone(), uid);
+        }
+
+        if let Some(username) = new_username {
+            user.username = username;
+        }
+        if let Some(email) = new_email {
+            user.email = email;
+        }
+        if let Some(is_active) = new_is_active {
+            user.is_active = is_active;
+        }
+        Ok(())
+    }
+
+    pub async fn admin_reset_password(&self, uid: u32, new_password: &str) -> Result<(), FopError> {
+        if new_password.is_empty() {
+            return Err(FopError::PasswordMismatch);
+        }
+        let mut users = self.users.write().await;
+        let user = users.get_mut(&uid).ok_or(FopError::UserNotFound)?;
+        user.password_hash = aes::encrypt(new_password, &user.password_salt).unwrap();
+        Ok(())
+    }
+
+    pub async fn admin_delete_user(&self, uid: u32) -> Result<(), FopError> {
+        let mut username_map = self.username_map.write().await;
+        let mut email_map = self.email_map.write().await;
+        let mut users = self.users.write().await;
+        let removed = users.remove(&uid).ok_or(FopError::UserNotFound)?;
+        username_map.remove(&removed.username);
+        email_map.remove(&removed.email);
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FopError { 
     TooManyRequest, 
     UserNameNotValid, 
+    UserNameConflict,
     EmailNotValid, 
+    EmailConflict,
     PasswordMismatch, 
     UserTooBig, 
     UserNotFound, 
+    UserInactive,
     TokenInvalid, 
     Other(Box<str>) 
 } 
@@ -637,10 +773,13 @@ impl ToString for FopError {
         match self {
             FopError::TooManyRequest => "Too many requests".to_string(),
             FopError::UserNameNotValid => "Username is not valid".to_string(),
+            FopError::UserNameConflict => "Username already exists".to_string(),
             FopError::EmailNotValid => "Email is not valid".to_string(),
+            FopError::EmailConflict => "Email already exists".to_string(),
             FopError::PasswordMismatch => "Password mismatch".to_string(),
             FopError::UserTooBig => "User data too big".to_string(),
             FopError::UserNotFound => "User not found".to_string(), 
+            FopError::UserInactive => "User is inactive".to_string(),
             FopError::TokenInvalid => "Token is invalid".to_string(),
             FopError::Other(msg) => msg.to_string(),
         }
@@ -680,7 +819,8 @@ mod test {
             email: "redstone@fds.moe".to_string(), 
             password_hash: "123456".to_string(), 
             password_salt: "Aa333333".to_string(), 
-            profile: object!({}) 
+            profile: object!({}),
+            is_active: true,
         }; 
         let value = user.into_json(); 
         println!("{}, {}", value.to_string(), value.into_json()) 

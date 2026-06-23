@@ -1,0 +1,119 @@
+-[ template "/base/base.html" ]-
+
+-[ block body ]-
+
+-[ insert "/base/path.html" ]-
+
+<div class="container-func">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">Edit User</h2>
+            <div class="text-muted">UID -[ user.uid ]-</div>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="/admin/panel">Back to users</a>
+    </div>
+
+    <form id="editForm" method="POST" action="/admin/users/-[ user.uid ]-" class="mb-4">
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input id="username" type="text" name="username" class="form-control" value="-[ user.username ]-" required />
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input id="email" type="email" name="email" class="form-control" value="-[ user.email ]-" required />
+        </div>
+        <div class="form-check mb-3">
+            <input id="isActive" class="form-check-input" type="checkbox" name="is_active" value="true" -[ if user.is_active ]-checked-[ endif ]- />
+            <label class="form-check-label" for="isActive">Active</label>
+        </div>
+        <button type="submit" class="btn btn-pink">Save</button>
+        <span id="editStatus" class="ms-2"></span>
+    </form>
+
+    <hr/>
+
+    <form id="passwordForm" method="POST" action="/admin/users/-[ user.uid ]-/password" class="mb-4">
+        <h3>Password</h3>
+        <div class="mb-3">
+            <label for="newPassword" class="form-label">New password</label>
+            <input id="newPassword" type="password" name="new_password" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-secondary">Reset Password</button>
+        <span id="passwordStatus" class="ms-2"></span>
+    </form>
+
+    <hr/>
+
+    <form id="deleteForm" method="POST" action="/admin/users/-[ user.uid ]-/delete">
+        <h3>Delete</h3>
+        <p>This removes the local user account. Admin membership entries are managed separately.</p>
+        <button type="submit" class="btn btn-danger">Delete User</button>
+        <span id="deleteStatus" class="ms-2"></span>
+    </form>
+
+    <script>
+    // Convert a FormData to URLSearchParams so the body is sent as
+    // application/x-www-form-urlencoded — the only content type the
+    // server-side form parser currently understands.
+    function urlencodedBody(form, overrides) {
+        const params = new URLSearchParams();
+        for (const [k, v] of new FormData(form)) {
+            params.append(k, v);
+        }
+        if (overrides) {
+            for (const [k, v] of Object.entries(overrides)) {
+                params.set(k, v);
+            }
+        }
+        return params.toString();
+    }
+
+    async function submitJsonForm(form, statusId, onSuccess) {
+        const status = document.getElementById(statusId);
+        status.textContent = 'Saving...';
+        const overrides = form.id === 'editForm'
+            ? { is_active: document.getElementById('isActive').checked ? 'true' : 'false' }
+            : null;
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: urlencodedBody(form, overrides),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                status.textContent = data.message || 'Request failed';
+                return;
+            }
+            status.textContent = 'Saved';
+            if (onSuccess) {
+                onSuccess();
+            }
+        } catch (e) {
+            status.textContent = 'Request failed';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('editForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            submitJsonForm(event.currentTarget, 'editStatus', () => window.location.reload());
+        });
+        document.getElementById('passwordForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            submitJsonForm(event.currentTarget, 'passwordStatus', () => event.currentTarget.reset());
+        });
+        document.getElementById('deleteForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (!confirm('Delete -[ user.username ]-?')) {
+                return;
+            }
+            submitJsonForm(event.currentTarget, 'deleteStatus', () => {
+                window.location.href = '/admin/panel';
+            });
+        });
+    });
+    </script>
+</div>
+
+-[ endblock ]-

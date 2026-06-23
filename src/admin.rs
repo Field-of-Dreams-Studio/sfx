@@ -6,6 +6,7 @@ use crate::op;
 use crate::APP; 
 
 pub mod api; 
+pub mod admins; 
 pub mod panel; 
 pub mod user; 
 

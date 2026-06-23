@@ -536,6 +536,120 @@ This module provides core utilities for managing user sessions, authentication t
 #### Flow Example
 TBD 
 
-### Admin 
+### Admin
 
-# APIs 
+The admin surface is split by content type:
+
+- `/admin/panel/*` — HTML pages
+- `/admin/users/*` — JSON API
+- `/admin/admins/*` — JSON API for admin-membership management
+
+All endpoints under `/admin/` are gated by `check_is_admin` (the current request's `UserID` must appear in `programfiles/admin_info/admins.json`). Non-admin requests are redirected to `/user/unauthorized` (HTML pages) or return `401 Unauthorized` JSON (API).
+
+#### Admin pages (HTML)
+
+**`GET /admin/`**
+Admin dashboard landing page (renders `admin/index.html`).
+
+**`GET /admin/panel`**
+User management list. Renders `admin/panel.html`, which fetches `/admin/users/json` client-side and paginates 10 rows per page. Columns: UID, Username, Email, Active, Action. Each row has an Edit link to `/admin/panel/<uid>`. A "Manage admins" button links to `/admin/panel/admins`.
+
+**`GET /admin/panel/<uid>`**
+Edit page for one user. Renders `admin/user_edit.html` with three forms:
+- Edit username, email, and active flag → `POST /admin/users/<uid>`
+- Reset password → `POST /admin/users/<uid>/password`
+- Delete user (browser `confirm()` first) → `POST /admin/users/<uid>/delete`
+
+All forms submit as `application/x-www-form-urlencoded` via JS and render the JSON response inline.
+
+**`GET /admin/panel/admins`**
+Admin-membership management. Renders `admin/admins.html`. Lists current entries from `admins.json` and supports add/remove.
+
+#### User API (JSON)
+
+**`GET /admin/users`**
+List all locally-stored users.
+*Response*:
+```json
+{
+  "success": true,
+  "total": 12,
+  "users": [
+    { "uid": 1, "username": "Admin", "email": "admin@...", "is_active": true, "is_admin": true },
+    ...
+  ]
+}
+```
+`is_admin` is computed on each call from `admins.json` — it is not a stored field on `UserStorage`.
+
+**`POST /admin/users`**
+Create a new user.
+*Form*: `username`, `email`, `password`.
+*Success*: `201 { "success": true, "username": "..." }`.
+*Errors*:
+- `400 Bad Request` — `FopError::UserNameNotValid` / `EmailNotValid` / `PasswordMismatch`.
+- `409 Conflict` — `FopError::UserNameConflict` / `EmailConflict` (the value is owned by another user).
+- `429 Too Many Requests` — `FopError::TooManyRequest`.
+- `500` — any other `FopError` variant. Logged via `tracing::error!`.
+
+**`GET /admin/users/json`**
+Identical payload to `GET /admin/users`; kept as the panel JS's stable endpoint name.
+
+**`GET /admin/users/<uid>`**
+Single-user JSON.
+*Response*: `200 { "success": true, "user": { … } }` or `404 { "success": false, "message": "User not found" }`.
+
+**`POST /admin/users/<uid>`**
+Edit an existing user. All fields optional — only present fields are applied.
+*Form*: any of `username`, `email`, `is_active` (`"true"|"on"|"1"|"yes"` → `true`, anything else → `false`).
+*Same-uid uniqueness exception:* keeping the user's existing username/email is allowed. A duplicate value owned by a different uid returns `409`.
+
+**`POST /admin/users/<uid>/password`**
+Reset password.
+*Form*: `new_password`.
+
+**`POST /admin/users/<uid>/delete`**
+Delete the user. Idempotent on a non-existent uid → `404`.
+
+#### Admin-membership API (JSON)
+
+**`GET /admin/admins/json`**
+Returns the current admins.
+*Response*: `{ "success": true, "admins": ["1@local", "3@local", ...] }`.
+
+**`POST /admin/admins`**
+Add an admin entry.
+*Form*: `uid` — either `"3"` (defaults to `@local`) or `"3@local"`. The uid must exist as a local user, otherwise `400 "Local user not found"`. Malformed entries (non-numeric uid, empty server segment) → `400 "Invalid admin entry"`.
+
+**`POST /admin/admins/<entry>/delete`**
+Remove an admin entry. `<entry>` is URL-encoded (`1%40local` for `1@local`).
+
+#### Backend additions
+
+The admin surface required new methods on `AuthManager` and `op`:
+
+**`AuthManager`** (in `src/local_auth/fop.rs`):
+- `admin_list_users() -> Vec<(u32, UserStorage)>` — uid-keyed enumeration.
+- `admin_get_user(uid) -> Option<UserStorage>` — single lookup.
+- `admin_edit_user(uid, new_username, new_email, new_is_active) -> Result<(), FopError>` — partial update with same-uid uniqueness exception. Holds `username_map`, `email_map`, `users` write locks atomically.
+- `admin_reset_password(uid, new_password) -> Result<(), FopError>`.
+- `admin_delete_user(uid) -> Result<(), FopError>`.
+
+**`UserStorage`** grew a `pub is_active: bool` field (defaults to `true` on load for backward compatibility with existing user files). Inactive users cannot authenticate via login, refresh, or `/users/me`.
+
+**`FopError`** gained two variants: `UserNameConflict`, `EmailConflict` — used so the API can map them to `409 Conflict` distinct from format-validation `400`.
+
+**`op` module:**
+- `ADMINS` switched from `Lazy<Value>` to `Lazy<RwLock<Value>>` so admin changes take effect without a server restart.
+- `pub fn get_admin() -> Value` now returns an owned clone (previously `&'static Value`).
+- `pub fn read_admin_entries() -> Vec<String>`.
+- `pub fn add_admin_entry(entry: &str) -> std::io::Result<()>` — idempotent.
+- `pub fn remove_admin_entry(entry: &str) -> std::io::Result<()>`.
+Both write helpers persist to disk first, then update the in-memory snapshot.
+
+#### `RedirectNonAdmin` middleware
+
+Unchanged: gate any custom admin route by inserting `RedirectNonAdmin` after `UserFetch` in your protocol stack. Non-admin requests redirect to `/user/unauthorized`.
+
+# APIs
+

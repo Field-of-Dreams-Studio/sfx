@@ -1,9 +1,10 @@
-use hotaru::prelude::*;
-use hotaru::http::*;
+use crate::APP;
 use crate::admin::check_is_admin;
+use crate::local_auth::LOCAL_AUTH;
 use crate::op::{self, into_path_l, pageprop};
 use crate::user::fetch::send_http_request;
-use crate::APP;
+use hotaru::http::*;
+use hotaru::prelude::*;
 
 async fn admin_fetch_json(req: &mut HttpReqCtx, path: &str) -> Option<Value> {
     let full_host: String = format!("http://{}", op::BINDING.clone());
@@ -41,10 +42,61 @@ endpoint! {
             .map(|j| j.get("users").clone())
             .unwrap_or(object!([]));
         akari_render!(
-            "user/panel.html",
+            "admin/panel.html",
             pageprop  = pageprop(req, "Manage Users", "Create, view, and edit users"),
             path      = into_path_l(req, vec!["home", "admin", "user"]),
             users     = users
+        )
+    }
+}
+
+endpoint! {
+    APP.url("/admin/panel/admins"),
+
+    pub panel_admins <HTTP> {
+        if !check_is_admin(req).await {
+            return redirect_response("/user/unauthorized");
+        }
+        akari_render!(
+            "admin/admins.html",
+            pageprop = pageprop(req, "Manage Admins", "Manage admin access"),
+            path = into_path_l(req, vec!["home", "admin", "user"]),
+        )
+    }
+}
+
+endpoint! {
+    APP.url("/admin/panel/<uid>"),
+
+    pub panel_user_edit <HTTP> {
+        if !check_is_admin(req).await {
+            return redirect_response("/user/unauthorized");
+        }
+
+        let uid = match req.param("uid").and_then(|uid| uid.parse::<u32>().ok()) {
+            Some(uid) => uid,
+            None => return text_response("404 User not found").status(StatusCode::NOT_FOUND),
+        };
+
+        let user = match LOCAL_AUTH.admin_get_user(uid).await {
+            Some(user) => {
+                let admin_entry = object!(format!("{}@local", uid));
+                object!({
+                    uid: uid,
+                    username: &user.username,
+                    email: &user.email,
+                    is_active: user.is_active,
+                    is_admin: op::get_admin().contains(&admin_entry),
+                })
+            }
+            None => return text_response("404 User not found").status(StatusCode::NOT_FOUND),
+        };
+
+        akari_render!(
+            "admin/user_edit.html",
+            pageprop = pageprop(req, "Edit User", "Edit user account"),
+            path = into_path_l(req, vec!["home", "admin", "user"]),
+            user = user,
         )
     }
 }
