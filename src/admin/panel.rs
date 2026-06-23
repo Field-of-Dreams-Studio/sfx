@@ -50,9 +50,13 @@ endpoint! {
 }
 
 endpoint! {
-    APP.url("/panel/users/json"),
+    APP.url("/admin/users/json"),
 
     pub panel_users_json <HTTP> {
+        if !check_is_admin(req).await {
+            return json_response(object!({ success: false, message: "Unauthorized" }))
+                .status(StatusCode::UNAUTHORIZED);
+        }
         let page = req.query("page").unwrap_or("1".to_string());
         let path = format!("/admin/users?page={}", page);
         let data = admin_fetch_json(req, &path).await

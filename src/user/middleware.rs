@@ -49,33 +49,39 @@ middleware! {
                 return next(req).await;
             }
             HALF_VALID_TIME..=CACHE_VALID_TIME => {
-                // handle "still valid" cache
+                // Cache is half-valid: serve it, refresh in background.
                 req.params.set::<User>(user);
-                if let Some(new_user) = fetch_user_info(host, auth_token.clone()).await {
-                    cache_user_info(&mut req, new_user);
+                match fetch_user_info(host.clone(), auth_token.clone()).await {
+                    Some(new_user) => {
+                        cache_user_info(&mut req, new_user);
+                        return next(req).await;
+                    }
+                    None => {
+                        // The stored token no longer validates (server restart,
+                        // manual revocation, TTL eviction, etc.). Redirecting to
+                        // /user/refresh would loop because /auth/refresh hits the
+                        // same failing token. Drop the session and continue as
+                        // guest so the handler can decide what to do.
+                        logout(&mut req).await;
+                        req.params.set::<User>(User::guest(host));
+                        return next(req).await;
+                    }
                 }
-                // Avoid redirect loop: don't redirect if already on /user/refresh
-                if !req.path().starts_with("/user/refresh") {
-                    redirect_refresh(&mut req);
-                    return Ok(req) // This is correct because redirect_refresh already write the request in context
-                }
-                return next(req).await;
             }
             _ => {
-                // cache expired
+                // Cache expired entirely.
                 match fetch_user_info(host.clone(), auth_token.clone()).await {
                     Some(new_user) => {
                         req.params.set::<User>(new_user.clone());
                         cache_user_info(&mut req, new_user);
                         return next(req).await;
                     }
-                    None => { 
-                        req.params.set::<User>(User::guest(host));  
-                        req.params
-                            .get_mut::<CSessionRW>()
-                            .unwrap()
-                            .remove("user_info_cache");
-                        return next(req).await; 
+                    None => {
+                        // Same as the half-valid case: token is dead; clear it
+                        // so the next request doesn't reload the loop.
+                        logout(&mut req).await;
+                        req.params.set::<User>(User::guest(host));
+                        return next(req).await;
                     }
                 }
             }

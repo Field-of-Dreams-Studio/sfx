@@ -25,7 +25,8 @@
     <h3>Existing Users</h3>
     <!--
         Filter form removed in 0.1.3 (the prior version's
-        action="/panel/users" target was a dead route, and none of the
+        action="/panel/users" target was an out-of-namespace dead route,
+        and none of the
         fields were honored by the JSON endpoint). Re-introducing filters
         requires LOCAL_AUTH.list_users to accept predicate parameters;
         tracked as a follow-up in TICKETS.md.
@@ -72,9 +73,9 @@
         const PER_PAGE = 10;
         let res;
         try {
-            res = await fetch('/panel/users/json' + window.location.search);
+            res = await fetch('/admin/users/json' + window.location.search);
         } catch (e) {
-            console.error('Fetch to /panel/users/json failed:', e);
+            console.error('Fetch to /admin/users/json failed:', e);
             return;
         }
         let text;
@@ -88,7 +89,7 @@
         try {
             data = JSON.parse(text);
         } catch (e) {
-            console.error('Invalid JSON from /panel/users/json:', text, e);
+            console.error('Invalid JSON from /admin/users/json:', text, e);
             return;
         }
         const users = Array.isArray(data.users) ? data.users : [];
@@ -107,7 +108,7 @@
                     '<td>' + esc(user.email) + '</td>' +
                     '<td>' + esc(user.is_active) + '</td>' +
                     '<td>' + esc(user.is_superuser) + '</td>' +
-                    '<td><a href="/panel/users/' + encodeURIComponent(uid) + '">Edit</a></td>' +
+                    '<td><a href="/admin/users/' + encodeURIComponent(uid) + '">Edit</a></td>' +
                 '</tr>';
         }
         tbody.innerHTML = html;
