@@ -14,8 +14,7 @@ use super::Server;
 /// Thin wrapper around `hotaru_http::send_request` that handles the old
 /// 0.7-style `(host_url, request, safety)` shape: parses the scheme/host/port
 /// out of an `http://...` URL, builds a `TcpOutbound`, sets the `Host` header
-/// if absent, and runs one request/response. HTTPS support requires the
-/// `https` feature on `hotaru` (not enabled in this project).
+/// if absent, and runs one request/response. 
 pub async fn send_http_request(
     host: impl Into<String>,
     mut request: HttpRequest,

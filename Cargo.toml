@@ -22,7 +22,7 @@ path = "src/main.rs"
 
 
 [dependencies]
-hotaru = "0.8.2"
+hotaru = { version = "0.8.2", features = ["https"] } 
 hotaru_lib = "0.8.2"
 htmstd = "0.8.2"
 tracing = "0.1.41"
