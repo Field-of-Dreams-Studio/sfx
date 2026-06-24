@@ -1,1 +1,10 @@
-{"1": {"username": "Admin", "password_salt": "\";h?pE$$7Bb~gxH=", "password_hash": "oc7pynzPeB8WiIJpguzabvtudZtYZu0h8dH3M59jgJ8vAw2+caYF0N3e0L9ybmGXGGDvAg==", "email": "admin@fds.moe", "profile": {}}}
+{
+    "1": {
+        "username": "Admin",
+        "email": "admin@fds.moe",
+        "password_salt": "sfx-default-pwd1",
+        "password_hash": "7BbDmvnp7en6PqRkokcBdTUDgBJPpe3svUDtBN90U6K3X4jWDKzAH8dopRYrzafzXihZNQ==",
+        "is_active": true,
+        "profile": {}
+    }
+}

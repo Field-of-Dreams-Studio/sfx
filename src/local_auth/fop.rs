@@ -861,6 +861,167 @@ mod test {
             max_uid: Arc::new(RwLock::new(2_u32))
         };
 
-        assert!(auth.check_password(1, "js").await); 
-    } 
-} 
+        assert!(auth.check_password(1, "js").await);
+    }
+}
+
+/// Step-by-step coverage of the password-verification path.
+///
+/// Each test isolates one rung of the ladder so that a regression in
+/// `aes::encrypt` / `aes::decrypt`, `check_password`, `login_user`, or
+/// `admin_reset_password` surfaces at the layer that introduced it instead
+/// of as a blanket "password mismatch" at the top.
+#[cfg(test)]
+mod password_verification_tests {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    use hotaru::prelude::*;
+    use hotaru_lib::ende::aes;
+
+    use crate::local_auth::fop::{AuthManager, FopError, TokenList, UserStorage};
+
+    /// Build a one-user in-memory AuthManager. The user is uid=1.
+    async fn manager_with_one_user(
+        username: &str,
+        password: &str,
+        is_active: bool,
+    ) -> AuthManager {
+        let salt = "test-salt-16char".to_string();
+        let hash = aes::encrypt(password, &salt).unwrap();
+        let mut users = HashMap::new();
+        users.insert(
+            1_u32,
+            UserStorage {
+                username: username.to_string(),
+                email: format!("{}@test.example", username),
+                password_hash: hash,
+                password_salt: salt,
+                profile: object!({}),
+                is_active,
+            },
+        );
+        let mut username_map = HashMap::new();
+        username_map.insert(username.to_string(), 1_u32);
+        let mut email_map = HashMap::new();
+        email_map.insert(format!("{}@test.example", username), 1_u32);
+        AuthManager {
+            users: Arc::new(RwLock::new(users)),
+            username_map: Arc::new(RwLock::new(username_map)),
+            email_map: Arc::new(RwLock::new(email_map)),
+            token_list: Arc::new(TokenList::new()),
+            path: "test.json".to_string(),
+            max_uid: Arc::new(RwLock::new(1_u32)),
+        }
+    }
+
+    /// Step 1 — AEAD round-trip works for the (password, salt) pair shipped
+    /// in `default/programfiles/local_auth/users`. This is the layer that
+    /// broke when the seed fixture went stale.
+    #[tokio::test]
+    async fn step1_aes_roundtrip_for_default_admin_shape() {
+        let salt = "sfx-default-pwd1";
+        let hash = aes::encrypt("Aa333333", salt).unwrap();
+        assert_eq!(aes::decrypt(&hash, salt).unwrap(), "Aa333333");
+    }
+
+    /// Step 2 — correct password yields `true`.
+    #[tokio::test]
+    async fn step2_check_password_accepts_correct() {
+        let auth = manager_with_one_user("Alice", "secret123", true).await;
+        assert!(auth.check_password(1, "secret123").await);
+    }
+
+    /// Step 3 — wrong password yields `false`.
+    #[tokio::test]
+    async fn step3_check_password_rejects_wrong() {
+        let auth = manager_with_one_user("Alice", "secret123", true).await;
+        assert!(!auth.check_password(1, "wrong").await);
+    }
+
+    /// Step 4 — unknown uid yields `false` (must never panic on missing key).
+    #[tokio::test]
+    async fn step4_check_password_rejects_unknown_uid() {
+        let auth = manager_with_one_user("Alice", "secret123", true).await;
+        assert!(!auth.check_password(999, "secret123").await);
+    }
+
+    /// Step 5 — inactive user yields `false` even with the right password.
+    /// Documents the deliberate "is_active gate before AEAD" ordering.
+    #[tokio::test]
+    async fn step5_check_password_rejects_inactive_user() {
+        let auth = manager_with_one_user("Alice", "secret123", false).await;
+        assert!(!auth.check_password(1, "secret123").await);
+    }
+
+    /// Step 6 — `login_user` issues a non-empty token on a correct password.
+    #[tokio::test]
+    async fn step6_login_user_issues_token_on_success() {
+        let auth = manager_with_one_user("Alice", "secret123", true).await;
+        let token = auth
+            .login_user(1, "secret123")
+            .await
+            .expect("login should succeed");
+        assert!(!token.is_empty());
+    }
+
+    /// Step 7 — `login_user` surfaces `PasswordMismatch` on a wrong password.
+    #[tokio::test]
+    async fn step7_login_user_returns_mismatch_on_wrong_password() {
+        let auth = manager_with_one_user("Alice", "secret123", true).await;
+        assert_eq!(
+            auth.login_user(1, "wrong").await.unwrap_err(),
+            FopError::PasswordMismatch
+        );
+    }
+
+    /// Step 8 — `admin_reset_password` flips the hash so the new password
+    /// logs in and the old one no longer does.
+    #[tokio::test]
+    async fn step8_admin_reset_password_round_trip() {
+        let auth = manager_with_one_user("Alice", "old_password", true).await;
+        auth.admin_reset_password(1, "new_password").await.unwrap();
+        assert!(!auth.check_password(1, "old_password").await);
+        assert!(auth.check_password(1, "new_password").await);
+        let token = auth
+            .login_user(1, "new_password")
+            .await
+            .expect("post-reset login should succeed");
+        assert!(!token.is_empty());
+    }
+}
+
+/// One single fixture test guarding the shipped admin credentials.
+///
+/// Decrypts the `password_hash` from
+/// `default/programfiles/local_auth/users` using its `password_salt` and
+/// asserts the result equals `"Aa333333"` — the value the `sfx new`
+/// scaffolder advertises to the user. If this test fails, every fresh
+/// scaffold ships an admin account that nobody can log into.
+#[cfg(test)]
+mod default_admin_fixture_test {
+    use hotaru::prelude::*;
+    use hotaru_lib::ende::aes;
+
+    #[test]
+    fn shipped_admin_password_decrypts_to_advertised_value() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/default/programfiles/local_auth/users"
+        );
+        let value = Value::from_jsonf(path)
+            .expect("default/programfiles/local_auth/users is missing or unreadable");
+        let admin = value.get("1");
+        let password_hash = admin.get("password_hash").string();
+        let password_salt = admin.get("password_salt").string();
+        let plaintext = aes::decrypt(&password_hash, &password_salt).expect(
+            "shipped admin password_hash failed to decrypt — \
+             regenerate the fixture with the current aes::encrypt",
+        );
+        assert_eq!(
+            plaintext, "Aa333333",
+            "shipped admin password must match the value `sfx new` prints (Aa333333)"
+        );
+    }
+}
