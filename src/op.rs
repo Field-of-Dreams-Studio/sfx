@@ -282,11 +282,19 @@ pub fn lang(req: &mut HttpReqCtx) -> String {
     lang_or_none(req).unwrap_or_else(default_lang)
 }
 
-/// Like `lang(req)` but returns `None` when neither the query string nor a
-/// cookie explicitly set a supported language. Lets downstream apps insert
-/// their own fallback (e.g. a `/<code>` URL-prefix scheme) between SFX's
-/// query/cookie layer and the site default — something `lang()` collapses
-/// into the same "default_lang()" answer.
+/// Like `lang(req)` but returns `None` when neither the query string, a
+/// cookie, nor an `Accept-Language` header yielded a supported language.
+/// Lets downstream apps insert their own fallback (e.g. a `/<code>` URL-
+/// prefix scheme) between SFX's negotiation layer and the site default —
+/// something `lang()` collapses into the same "default_lang()" answer.
+///
+/// Resolution order:
+/// 1. `?lang=<code>` query parameter
+/// 2. `lang` cookie
+/// 3. `Accept-Language` header, via [`htmstd::PreferredLanguage::best_match`]
+///    against the supported-language list (requires
+///    [`htmstd::PreferredLanguageMiddleware`] in the protocol stack — which
+///    SFX's default `APP` installs).
 pub fn lang_or_none(req: &mut HttpReqCtx) -> Option<String> {
     if let Some(q) = req.query("lang") {
         if SUPPORT_LANG.contains(&q.clone().into()) {
@@ -297,6 +305,18 @@ pub fn lang_or_none(req: &mut HttpReqCtx) -> Option<String> {
         let v = c.get_value().to_string();
         if SUPPORT_LANG.contains(&v.clone().into()) {
             return Some(v);
+        }
+    }
+    if let Some(pref) = req.params.get::<htmstd::PreferredLanguage>() {
+        let supported: Vec<String> = SUPPORT_LANG
+            .list()
+            .iter()
+            .map(|v| v.string())
+            .collect();
+        if let Some(best) = pref.best_match_owned(supported) {
+            if SUPPORT_LANG.contains(&best.clone().into()) {
+                return Some(best);
+            }
         }
     }
     None

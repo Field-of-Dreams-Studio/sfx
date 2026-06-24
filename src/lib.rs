@@ -1,11 +1,14 @@
 use hotaru::prelude::*;
 use hotaru::http::*;
-use htmstd::{CookieSession, PrintLog};
+use htmstd::{CookieSession, PreferredLanguageMiddleware, PreferredLanguageSettings, PrintLog};
 
 pub mod prelude {
     pub use hotaru::prelude::*;
     pub use hotaru::http::*;
-    pub use htmstd::{CookieSession, PrintLog, Cors, cors_settings};
+    pub use htmstd::{
+        CookieSession, Cors, PreferredLanguage, PreferredLanguageMiddleware,
+        PreferredLanguageRequestExt, PreferredLanguageSettings, PrintLog, cors_settings,
+    };
     pub use hotaru;
 }
 
@@ -24,11 +27,16 @@ pub static APP: SServer = Lazy::new(|| {
         .single_protocol(ProtocolBuilder::new(HTTP::server(HttpSafety::default()))
             .append_middleware::<PrintLog>()
             .append_middleware::<CookieSession>()
+            .append_middleware::<PreferredLanguageMiddleware>()
             .append_middleware::<user::UserFetch>()
         )
         .set_config(
             prelude::cors_settings::AppCorsSettings::new()
-        ).build()
+        )
+        .set_config(
+            PreferredLanguageSettings::new(op::default_lang())
+        )
+        .build()
 });
 
 // endpoint! {

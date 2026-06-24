@@ -39,11 +39,25 @@ order, accepting a value only if it appears in `support_lang.json`:
 1. `?lang=<code>` query parameter — used by crawlers and
    `<link rel="alternate" hreflang>` so each language has its own crawlable URL.
 2. `lang` cookie — set by the footer language switcher for human users.
-3. `default_lang()` — the first entry in `support_lang.json`.
+3. `Accept-Language` header — negotiated via
+   `htmstd::PreferredLanguage::best_match` against `support_lang.json`.
+   Quality, header order, and supported-list order are honored per RFC 9110.
+4. `default_lang()` — the first entry in `support_lang.json`.
 
-`op::lang_or_none(req)` returns `None` at step 3 instead of the default, so
+`op::lang_or_none(req)` returns `None` at step 4 instead of the default, so
 downstream apps can insert their own fallback (e.g. a `/<code>/...` URL
-prefix scheme) between SFX's query/cookie layer and the site default.
+prefix scheme) between SFX's negotiation layer and the site default.
+
+The `Accept-Language` layer requires `PreferredLanguageMiddleware` in the
+protocol stack. SFX's bundled `APP` installs it automatically and configures
+its fallback to match `default_lang()`. Downstream apps that build their own
+`APP` should also append `PreferredLanguageMiddleware` (re-exported from
+`sfx::prelude`) for the layer to take effect.
+
+Handlers that want typed access to the parsed header can call
+`req.params.get::<htmstd::PreferredLanguage>()` directly (or via the
+`PreferredLanguageRequestExt` trait) — useful for non-template scenarios
+like API content negotiation.
 
 ### `/static/<path>`
 
@@ -536,120 +550,256 @@ This module provides core utilities for managing user sessions, authentication t
 #### Flow Example
 TBD 
 
-### Admin
+### Admin Endpoints
 
-The admin surface is split by content type:
+The admin surface is split by content type: `/admin/panel/*` returns HTML,
+`/admin/users/*` and `/admin/admins/*` return JSON. All endpoints check
+`check_is_admin` first (the current request's `UserID` must appear in
+`programfiles/admin_info/admins.json`). HTML pages redirect non-admins to
+`/user/unauthorized`; JSON endpoints return `401 Unauthorized`.
 
-- `/admin/panel/*` — HTML pages
-- `/admin/users/*` — JSON API
-- `/admin/admins/*` — JSON API for admin-membership management
+#### 1. Pages (HTML)
 
-All endpoints under `/admin/` are gated by `check_is_admin` (the current request's `UserID` must appear in `programfiles/admin_info/admins.json`). Non-admin requests are redirected to `/user/unauthorized` (HTML pages) or return `401 Unauthorized` JSON (API).
+**`GET /admin/`**  
+Admin dashboard landing page.  
+*Renders*: `admin/index.html` with localized page chrome.
 
-#### Admin pages (HTML)
+**`GET /admin/panel`**  
+User-management list.  
+*Renders*: `admin/panel.html`, which loads `/admin/users/json` client-side
+and paginates 10 rows per page.  
+*Columns*: UID, Username, Email, Active, Action.  
+*Links*: per-row "Edit" → `/admin/panel/<uid>`; "Manage admins" →
+`/admin/panel/admins`.
 
-**`GET /admin/`**
-Admin dashboard landing page (renders `admin/index.html`).
-
-**`GET /admin/panel`**
-User management list. Renders `admin/panel.html`, which fetches `/admin/users/json` client-side and paginates 10 rows per page. Columns: UID, Username, Email, Active, Action. Each row has an Edit link to `/admin/panel/<uid>`. A "Manage admins" button links to `/admin/panel/admins`.
-
-**`GET /admin/panel/<uid>`**
-Edit page for one user. Renders `admin/user_edit.html` with three forms:
-- Edit username, email, and active flag → `POST /admin/users/<uid>`
+**`GET /admin/panel/<uid>`**  
+Edit page for one user. Returns `404` (HTML) if the uid doesn't exist.  
+*Renders*: `admin/user_edit.html` with three forms:
+- Edit username / email / active → `POST /admin/users/<uid>`
 - Reset password → `POST /admin/users/<uid>/password`
-- Delete user (browser `confirm()` first) → `POST /admin/users/<uid>/delete`
+- Delete (`confirm()` first) → `POST /admin/users/<uid>/delete`
 
-All forms submit as `application/x-www-form-urlencoded` via JS and render the JSON response inline.
+All three forms submit as `application/x-www-form-urlencoded` via JS and
+display the JSON response inline.
 
-**`GET /admin/panel/admins`**
-Admin-membership management. Renders `admin/admins.html`. Lists current entries from `admins.json` and supports add/remove.
+**`GET /admin/panel/admins`**  
+Admin-membership management page.  
+*Renders*: `admin/admins.html`. Lists entries from `admins.json` and
+supports add/remove via the JSON API.
 
-#### User API (JSON)
+---
 
-**`GET /admin/users`**
-List all locally-stored users.
+#### 2. User Management API (JSON)
+
+**`GET /admin/users`**  
+List all locally-stored users.  
 *Response*:
 ```json
 {
   "success": true,
   "total": 12,
   "users": [
-    { "uid": 1, "username": "Admin", "email": "admin@...", "is_active": true, "is_admin": true },
-    ...
+    {
+      "uid": 1,
+      "username": "Admin",
+      "email": "admin@example.com",
+      "is_active": true,
+      "is_admin": true
+    }
   ]
 }
 ```
-`is_admin` is computed on each call from `admins.json` — it is not a stored field on `UserStorage`.
+`is_admin` is computed per request from `admins.json`; it is not a stored
+field on `UserStorage`.
 
-**`POST /admin/users`**
-Create a new user.
-*Form*: `username`, `email`, `password`.
-*Success*: `201 { "success": true, "username": "..." }`.
-*Errors*:
-- `400 Bad Request` — `FopError::UserNameNotValid` / `EmailNotValid` / `PasswordMismatch`.
-- `409 Conflict` — `FopError::UserNameConflict` / `EmailConflict` (the value is owned by another user).
-- `429 Too Many Requests` — `FopError::TooManyRequest`.
-- `500` — any other `FopError` variant. Logged via `tracing::error!`.
+**`POST /admin/users`**  
+Create a new local user.  
+*Parameters* (URL-encoded form):  
+- `username`: New user's identifier  
+- `email`: Email address  
+- `password`: Plaintext password (hashed server-side before storage)  
 
-**`GET /admin/users/json`**
-Identical payload to `GET /admin/users`; kept as the panel JS's stable endpoint name.
+*Responses*:
+```json
+// Success (201 Created)
+{ "success": true, "username": "alice" }
 
-**`GET /admin/users/<uid>`**
-Single-user JSON.
-*Response*: `200 { "success": true, "user": { … } }` or `404 { "success": false, "message": "User not found" }`.
+// 400 Bad Request — format validation failed
+{ "success": false, "message": "Username is not valid" }
 
-**`POST /admin/users/<uid>`**
-Edit an existing user. All fields optional — only present fields are applied.
-*Form*: any of `username`, `email`, `is_active` (`"true"|"on"|"1"|"yes"` → `true`, anything else → `false`).
-*Same-uid uniqueness exception:* keeping the user's existing username/email is allowed. A duplicate value owned by a different uid returns `409`.
+// 409 Conflict — value owned by another user
+{ "success": false, "message": "Email already exists" }
+```
+Maps `FopError` variants to: `400` (`UserNameNotValid` / `EmailNotValid` /
+`PasswordMismatch`), `409` (`UserNameConflict` / `EmailConflict`), `429`
+(`TooManyRequest`), `500` (anything else, logged via `tracing::error!`).
 
-**`POST /admin/users/<uid>/password`**
-Reset password.
-*Form*: `new_password`.
+**`GET /admin/users/json`**  
+Identical payload to `GET /admin/users`; kept as the panel JS's stable
+endpoint name.
 
-**`POST /admin/users/<uid>/delete`**
-Delete the user. Idempotent on a non-existent uid → `404`.
+**`GET /admin/users/<uid>`**  
+Single-user JSON.  
+*Responses*:
+```json
+// 200 OK
+{
+  "success": true,
+  "user": { "uid": 1, "username": "Admin", ... }
+}
 
-#### Admin-membership API (JSON)
+// 404 Not Found
+{ "success": false, "message": "User not found" }
+```
 
-**`GET /admin/admins/json`**
-Returns the current admins.
-*Response*: `{ "success": true, "admins": ["1@local", "3@local", ...] }`.
+**`POST /admin/users/<uid>`**  
+Edit an existing user. All fields optional — only present fields are
+applied.  
+*Parameters* (URL-encoded form, all optional):  
+- `username`: New username  
+- `email`: New email  
+- `is_active`: `"true" | "on" | "1" | "yes"` → `true`, anything else →
+  `false`  
 
-**`POST /admin/admins`**
-Add an admin entry.
-*Form*: `uid` — either `"3"` (defaults to `@local`) or `"3@local"`. The uid must exist as a local user, otherwise `400 "Local user not found"`. Malformed entries (non-numeric uid, empty server segment) → `400 "Invalid admin entry"`.
+*Same-uid uniqueness exception*: passing the user's existing username or
+email is allowed (no-op for that field). A duplicate value owned by a
+different uid returns `409`.
 
-**`POST /admin/admins/<entry>/delete`**
-Remove an admin entry. `<entry>` is URL-encoded (`1%40local` for `1@local`).
+*Responses*:
+```json
+// 200 OK
+{ "success": true }
 
-#### Backend additions
+// 404 Not Found / 400 Bad Request / 409 Conflict
+{ "success": false, "message": "..." }
+```
 
-The admin surface required new methods on `AuthManager` and `op`:
+**`POST /admin/users/<uid>/password`**  
+Reset the user's password.  
+*Parameters* (URL-encoded form):  
+- `new_password`: Plaintext password (hashed server-side)
 
-**`AuthManager`** (in `src/local_auth/fop.rs`):
-- `admin_list_users() -> Vec<(u32, UserStorage)>` — uid-keyed enumeration.
-- `admin_get_user(uid) -> Option<UserStorage>` — single lookup.
-- `admin_edit_user(uid, new_username, new_email, new_is_active) -> Result<(), FopError>` — partial update with same-uid uniqueness exception. Holds `username_map`, `email_map`, `users` write locks atomically.
-- `admin_reset_password(uid, new_password) -> Result<(), FopError>`.
-- `admin_delete_user(uid) -> Result<(), FopError>`.
+*Responses*:
+```json
+// 200 OK
+{ "success": true }
 
-**`UserStorage`** grew a `pub is_active: bool` field (defaults to `true` on load for backward compatibility with existing user files). Inactive users cannot authenticate via login, refresh, or `/users/me`.
+// 400 Bad Request (empty password) / 404 Not Found
+{ "success": false, "message": "..." }
+```
 
-**`FopError`** gained two variants: `UserNameConflict`, `EmailConflict` — used so the API can map them to `409 Conflict` distinct from format-validation `400`.
+**`POST /admin/users/<uid>/delete`**  
+Delete a user. Returns `404` if the uid doesn't exist.  
+*Responses*:
+```json
+// 200 OK
+{ "success": true }
 
-**`op` module:**
-- `ADMINS` switched from `Lazy<Value>` to `Lazy<RwLock<Value>>` so admin changes take effect without a server restart.
-- `pub fn get_admin() -> Value` now returns an owned clone (previously `&'static Value`).
-- `pub fn read_admin_entries() -> Vec<String>`.
-- `pub fn add_admin_entry(entry: &str) -> std::io::Result<()>` — idempotent.
-- `pub fn remove_admin_entry(entry: &str) -> std::io::Result<()>`.
-Both write helpers persist to disk first, then update the in-memory snapshot.
+// 404 Not Found
+{ "success": false, "message": "User not found" }
+```
 
-#### `RedirectNonAdmin` middleware
+---
 
-Unchanged: gate any custom admin route by inserting `RedirectNonAdmin` after `UserFetch` in your protocol stack. Non-admin requests redirect to `/user/unauthorized`.
+#### 3. Admin Membership API (JSON)
+
+**`GET /admin/admins/json`**  
+List current admin entries.  
+*Response*:
+```json
+{
+  "success": true,
+  "admins": ["1@local", "3@local"]
+}
+```
+
+**`POST /admin/admins`**  
+Add an admin entry.  
+*Parameters* (URL-encoded form):  
+- `uid`: Either `"3"` (defaults to `@local`) or `"3@local"` (fully
+  qualified). Must reference an existing local user for the `@local`
+  case.
+
+*Responses*:
+```json
+// 200 OK — idempotent: re-adding an existing entry succeeds silently
+{ "success": true, "entry": "3@local" }
+
+// 400 Bad Request — malformed or unknown uid
+{ "success": false, "message": "Local user not found" }
+```
+
+**`POST /admin/admins/<entry>/delete`**  
+Remove an admin entry. `<entry>` must be URL-encoded (e.g. `1%40local`
+for `1@local`).  
+*Responses*:
+```json
+// 200 OK — also idempotent for missing entries
+{ "success": true }
+
+// 400 Bad Request
+{ "success": false, "message": "Invalid admin entry" }
+```
+
+---
+
+#### 4. Backend additions
+
+##### `AuthManager` (in `src/local_auth/fop.rs`)
+
+New uid-keyed admin methods. None take a caller token — gating happens at
+the endpoint layer:
+
+- **`admin_list_users() -> Vec<(u32, UserStorage)>`**  
+  Enumerates all users with their uid; uid-sorted.
+- **`admin_get_user(uid) -> Option<UserStorage>`**  
+  Single lookup; `None` if missing.
+- **`admin_edit_user(uid, new_username, new_email, new_is_active) -> Result<(), FopError>`**  
+  Partial update with same-uid uniqueness exception. Holds
+  `username_map`, `email_map`, `users` write locks atomically; format
+  checks run before the lock acquisition, conflict checks after.
+- **`admin_reset_password(uid, new_password) -> Result<(), FopError>`**  
+  Empty password → `PasswordMismatch`.
+- **`admin_delete_user(uid) -> Result<(), FopError>`**  
+  Removes from `users`, `username_map`, and `email_map` atomically. Does
+  *not* clean orphan `admins.json` entries (tracked in `TICKETS.md`).
+
+##### `UserStorage` (in `src/local_auth/fop.rs`)
+
+New field:
+- **`pub is_active: bool`**  
+  Defaults to `true` on load from disk for backward compatibility with
+  pre-0.1.3 user files. Inactive users cannot authenticate via
+  `/auth/login`, `/auth/refresh`, or `/users/me`.
+
+##### `FopError` (in `src/local_auth/fop.rs`)
+
+New variants:
+- **`UserNameConflict`**, **`EmailConflict`** — value owned by another
+  uid. Surfaced by the API as `409 Conflict`, distinct from the format-
+  validation `400` produced by `UserNameNotValid` / `EmailNotValid`.
+
+##### `op` module (in `src/op.rs`)
+
+Admins are now mutable at runtime. `ADMINS` switched from
+`Lazy<Value>` to `Lazy<RwLock<Value>>`, and `get_admin()` returns an
+owned clone rather than `&'static Value`:
+
+- **`get_admin() -> Value`**  
+  Returns a clone of the current admin snapshot.
+- **`read_admin_entries() -> Vec<String>`**  
+  Convenience: the snapshot as `Vec<String>`.
+- **`add_admin_entry(entry: &str) -> std::io::Result<()>`**  
+  Idempotent. Persists to `programfiles/admin_info/admins.json` first,
+  then updates the in-memory snapshot.
+- **`remove_admin_entry(entry: &str) -> std::io::Result<()>`**  
+  Same write-through ordering.
+
+##### `RedirectNonAdmin` middleware
+
+Unchanged. Insert after `UserFetch` in your protocol stack to gate any
+custom admin route. Non-admin requests are redirected to
+`/user/unauthorized`.
 
 # APIs
 

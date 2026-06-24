@@ -63,34 +63,33 @@ dependencies = [
 
 [[package]]
 name = "ahttpm"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79d5a2ff4c281ccde88732ee3d97bba34b705411eb6c247f287cdfeef956a9b4"
+version = "0.7.1"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "ctor",
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
 name = "akari"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc20e626157c86ec15e788b6c0367387826db348d1e9162d3c61faa4c620103e"
+checksum = "ac9c86dfe2e1b70a5bf422c9cf7069a20f6d4b28c0531f979c5f5fa272ca63d2"
 dependencies = [
  "akari_macro",
 ]
 
 [[package]]
 name = "akari_macro"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26f0321f46e347313a51ecaebfbca8d13c093426b91f3bfb0a964476fb6f9c32"
+checksum = "5bab5812f5fa83290e0ead0e885593d01ea99f574002f3940dd798471ff187fa"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn",
 ]
 
 [[package]]
@@ -172,7 +171,7 @@ checksum = "e539d3fca749fcee5236ab05e93a52867dd549cc157c8cb7f99595f3cedffdb5"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -312,7 +311,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -489,7 +488,7 @@ checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -606,8 +605,7 @@ dependencies = [
 [[package]]
 name = "hotaru"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4461ce23c00a4ea66fb62e49b642a4b1d7062a25a5920fb35f1981d88a2724eb"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "ahttpm",
  "akari",
@@ -624,8 +622,7 @@ dependencies = [
 [[package]]
 name = "hotaru_core"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c88e257eaaa8a582d0c2644b4c71b631477f4c21010a9aa8e6909a283c32480d"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "akari",
  "async-trait",
@@ -634,7 +631,6 @@ dependencies = [
  "futures-core",
  "futures-util",
  "hotaru_lib",
- "once_cell",
  "parking_lot",
  "regex",
  "tokio",
@@ -643,9 +639,8 @@ dependencies = [
 
 [[package]]
 name = "hotaru_http"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "579fc2e461b3187b84b08fd65d3307ede4c38c5a1a20c3eb65ddc994836acfdf"
+version = "0.8.3"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "akari",
  "async-trait",
@@ -661,8 +656,7 @@ dependencies = [
 [[package]]
 name = "hotaru_lib"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ff917ba604b1d446ce397207f41252d3a6707e983df7fe36f13eefea9048402"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "aes-gcm",
  "base64 0.21.7",
@@ -675,8 +669,7 @@ dependencies = [
 [[package]]
 name = "hotaru_tls"
 version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d818c5842351789f2bd7c078392ec8cdb0835d36aac389d96e1ac8bdcdeb41f"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "async-trait",
  "hotaru_core",
@@ -690,8 +683,7 @@ dependencies = [
 [[package]]
 name = "hotaru_trans"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc983ff39917f9812e8334327384014528fda51a3304c95b3062b48286415e2b"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "cfg-if",
  "hotaru_core",
@@ -700,9 +692,8 @@ dependencies = [
 
 [[package]]
 name = "htmstd"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e8bb6051c81aebc1e3fe9d648a0e9cc06ca9fb81fe0901f1f506eb65e92fc47"
+version = "0.8.3"
+source = "git+https://github.com/Field-of-Dreams-Studio/hotaru?rev=376ccbe885a63e637256ff4dbf75fbe01c5e794d#376ccbe885a63e637256ff4dbf75fbe01c5e794d"
 dependencies = [
  "akari",
  "dashmap",
@@ -1194,7 +1185,7 @@ checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -1213,6 +1204,7 @@ dependencies = [
 name = "sfx"
 version = "0.1.3"
 dependencies = [
+ "akari",
  "anyhow",
  "chrono",
  "clap",
@@ -1303,17 +1295,6 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "1.0.109"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
-dependencies = [
- "proc-macro2",
- "quote",
- "unicode-ident",
-]
-
-[[package]]
-name = "syn"
 version = "2.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17b6f705963418cdb9927482fa304bc562ece2fdd4f616084c50b7023b435a40"
@@ -1340,7 +1321,7 @@ checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -1400,7 +1381,7 @@ checksum = "6e06d43f1345a3bcd39f6a56dbb7dcab2ba47e68e8ac134855e7e2bdbaf8cab8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -1445,7 +1426,7 @@ checksum = "81383ab64e72a7a8b8e13130c49e3dab29def6d0c7d76a03087b3cf71c5c6903"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -1545,7 +1526,7 @@ dependencies = [
  "log",
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
  "wasm-bindgen-shared",
 ]
 
@@ -1567,7 +1548,7 @@ checksum = "8ae87ea40c9f689fc23f209965b6fb8a99ad69aeeb0231408be24920604395de"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -1611,7 +1592,7 @@ checksum = "a47fddd13af08290e67f4acabf4b459f647552718f683a7b415d290ac744a836"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -1622,7 +1603,7 @@ checksum = "bd9211b69f8dcdfa817bfd14bf1c97c9188afa36f4750130fcdf3f400eca9fa8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
@@ -1757,7 +1738,7 @@ checksum = "9ecf5b4cc5364572d7f4c329661bcc82724222973f2cab6f050a4e5c22f75181"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.104",
+ "syn",
 ]
 
 [[package]]
