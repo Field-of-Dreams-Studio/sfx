@@ -22,9 +22,9 @@ path = "src/main.rs"
 
 
 [dependencies]
-hotaru = { git = "https://github.com/Field-of-Dreams-Studio/hotaru", rev = "376ccbe885a63e637256ff4dbf75fbe01c5e794d", features = ["https"] }
-hotaru_lib = { git = "https://github.com/Field-of-Dreams-Studio/hotaru", rev = "376ccbe885a63e637256ff4dbf75fbe01c5e794d" }
-htmstd = { git = "https://github.com/Field-of-Dreams-Studio/hotaru", rev = "376ccbe885a63e637256ff4dbf75fbe01c5e794d" }
+hotaru = { version = "0.8.3", features = ["https"] }
+hotaru_lib = "0.8.3"
+htmstd = "0.8.3"
 
 # Required as a direct dep so `object!` / `akari_render!` (re-exported via
 # hotaru::prelude) can resolve `::akari::…` paths emitted by akari_macro.

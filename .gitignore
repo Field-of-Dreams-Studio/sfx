@@ -1,8 +1,11 @@
 /target
+default/target/
 .DS_Store
 .vs/
 Cargo.lock
-.playwright-mcp/ 
-.claude/ 
-PLAN_0.1.3_admin_panel.md 
-TICKETS.md 
+.playwright-mcp/
+.claude/
+PLAN_0.1.3_admin_panel.md
+TICKETS.md
+sfx_align.md
+
