@@ -1,0 +1,66 @@
+name: Scaffold check
+
+# Verifies that `sfx new` produces a project which compiles against the
+# current branch. Catches template drift (e.g., a Cargo.toml.template
+# pinning an incompatible sfx version, or template code that references a
+# removed API) before it lands on master.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  scaffold-compiles:
+    name: sfx new -> cargo check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build the sfx CLI
+        run: cargo build --release --bin sfx
+
+      - name: Scaffold demo app via `sfx new`
+        run: ./target/release/sfx new demo_app /tmp/scaffold-check
+
+      - name: Patch scaffold to depend on the current sfx checkout
+        # The scaffolded Cargo.toml pins sfx to a crates.io version, which
+        # may not match this branch (or may not be published yet). Repoint
+        # it at the current checkout so we test what this branch actually
+        # ships.
+        run: |
+          sed -i 's|sfx = "[^"]*"|sfx = { path = "'"$GITHUB_WORKSPACE"'" }|' \
+            /tmp/scaffold-check/demo_app/Cargo.toml
+          cat /tmp/scaffold-check/demo_app/Cargo.toml
+
+      - name: Verify the scaffolded project compiles
+        working-directory: /tmp/scaffold-check/demo_app
+        run: cargo check
+
+  sfx-tests:
+    name: sfx crate tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo test --lib
+        # Includes the shipped-admin-fixture guard
+        # (`default_admin_fixture_test::shipped_admin_password_decrypts_to_advertised_value`),
+        # which catches regressions in the default seeded admin credentials
+        # before every fresh scaffold ships a broken account.
+        run: cargo test --lib
